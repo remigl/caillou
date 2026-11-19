@@ -145,8 +145,11 @@ void main() {
     test('sinon la catégorie la plus précise, seulement si elle correspond nettement', () {
       const p = OffProduct(barcode: '1', nutrition: Nutrition(), categories: ['Aliments végétaux', 'Tomate']);
       expect(genericEquivalent(p, index)!.code, 11);
+      // « Spaghetti » est un alias de « pâtes » : rattaché aux pâtes sèches.
       const q = OffProduct(barcode: '1', nutrition: Nutrition(), categories: ['Snacks', 'Spaghetti']);
-      expect(genericEquivalent(q, index), isNull);
+      expect(genericEquivalent(q, index)!.code, 7);
+      const r = OffProduct(barcode: '1', nutrition: Nutrition(), categories: ['Snacks', 'Bonbons gélifiés']);
+      expect(genericEquivalent(r, index), isNull);
     });
   });
 }
