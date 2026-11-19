@@ -2,8 +2,7 @@ name: Build APK
 
 on:
   push:
-    branches: [main]
-    tags: ['v*']
+    branches: [main, release]
   pull_request:
   workflow_dispatch:
 
@@ -84,26 +83,32 @@ jobs:
       - name: Build APK
         run: flutter build apk --release 2>&1 | tee -a ci.log
 
-      - name: Renommer l'APK
+      # Branche release -> version publiée vX.Y.Z (lue dans pubspec.yaml) ; main -> pré-version de test build-N.
+      - name: Nom de la version
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then NAME="caillou-${GITHUB_REF_NAME}.apk"; else NAME="caillou-build-${{ github.run_number }}.apk"; fi
-          cp build/app/outputs/flutter-apk/app-release.apk "$NAME"
-          echo "APK_NAME=$NAME" >> "$GITHUB_ENV"
+          VERSION=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([0-9.]+).*/\1/')
+          if [ "$GITHUB_REF" = "refs/heads/release" ]; then
+            TAG="v$VERSION"; TITLE="Caillou $TAG"; PRE=false; LATEST=true
+          else
+            TAG="build-${{ github.run_number }}"; TITLE="Caillou — build ${{ github.run_number }} (test)"; PRE=true; LATEST=false
+          fi
+          cp build/app/outputs/flutter-apk/app-release.apk "caillou-$TAG.apk"
+          { echo "TAG=$TAG"; echo "TITLE=$TITLE"; echo "PRE=$PRE"; echo "LATEST=$LATEST"; echo "APK_NAME=caillou-$TAG.apk"; } >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v4
         with:
           name: caillou-apk
           path: ${{ env.APK_NAME }}
 
-      # Tag vX.Y.Z -> version publiée ; push sur main -> pré-version de test build-N.
       - name: Publier la version
-        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', github.run_number) }}
-          name: ${{ startsWith(github.ref, 'refs/tags/') && format('Caillou {0}', github.ref_name) || format('Caillou — build {0} (test)', github.run_number) }}
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
-          make_latest: ${{ startsWith(github.ref, 'refs/tags/') && 'true' || 'false' }}
+          tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ env.TITLE }}
+          prerelease: ${{ env.PRE }}
+          make_latest: ${{ env.LATEST }}
           body_path: RELEASE_NOTES.md
           files: ${{ env.APK_NAME }}
 

@@ -18,7 +18,8 @@ Pas de quantités, pas de compte, pas de score maison. Toute donnée absente est
 Dernière version : **Releases → Caillou vX.Y.Z → caillou-vX.Y.Z.apk**, à ouvrir sur le téléphone
 (Android 7.0 ou plus, autoriser l'installation depuis cette source).
 
-- Publier une version : pousser un tag `vX.Y.Z` → build, tests et release GitHub automatiques.
+- Publier une version : mettre à jour `version:` dans `pubspec.yaml`, puis pousser sur la branche
+  `release` → build et release GitHub `vX.Y.Z` automatiques.
 - Chaque push sur `main` publie aussi une pré-version de test `build-N`.
 - En cas d'échec du build, le journal est poussé dans la branche `ci-log` (lisible sans connexion).
 - La base Ciqual est versionnée (`assets/data/ciqual.json`) ; pour la régénérer :
