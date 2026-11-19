@@ -14,6 +14,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Tests et analyse : visibles dans l'onglet Actions, sans bloquer la production de l'APK.
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tests du convertisseur Ciqual
+        run: node --test tool/ciqual_lib.test.mjs
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyse statique
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Tests Flutter
+        run: flutter test
+
   apk:
     runs-on: ubuntu-latest
     steps:
@@ -23,19 +43,19 @@ jobs:
         with:
           node-version: 22
 
-      - name: Tests du convertisseur Ciqual
-        run: node --test tool/ciqual_lib.test.mjs
-
       - name: Cache des XML Ciqual
         uses: actions/cache@v4
         with:
           path: .ciqual-cache
           key: ciqual-2025_11_03
 
+      # Si la conversion échoue, l'APK est quand même construit : le scan et la photo
+      # fonctionnent, la recherche affiche « Base d'aliments indisponible ».
       - name: Base Ciqual (générée si absente du dépôt)
+        continue-on-error: true
         run: |
           if [ ! -f assets/data/ciqual.json ]; then
-            node tool/build_ciqual.mjs
+            node tool/build_ciqual.mjs || { echo "::warning::Base Ciqual non générée, APK construit sans."; exit 1; }
           else
             echo "assets/data/ciqual.json présent, conversion ignorée."
           fi
@@ -54,12 +74,6 @@ jobs:
         run: bash tool/setup_android.sh
 
       - run: flutter pub get
-
-      - name: Analyse statique
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
-
-      - name: Tests
-        run: flutter test
 
       - name: Build APK
         run: flutter build apk --release
