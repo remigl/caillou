@@ -32,7 +32,18 @@ jobs:
       - name: Analyse statique
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Tests Flutter
-        run: flutter test
+        shell: bash
+        run: flutter test --reporter expanded 2>&1 | tee checks.log
+
+      - name: Publier le journal des tests
+        if: always() && github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          mkdir -p /tmp/checks-log && cp checks.log /tmp/checks-log/ 2>/dev/null || echo "pas de journal" > /tmp/checks-log/checks.log
+          cd /tmp/checks-log
+          echo "run ${{ github.run_number }} sha ${{ github.sha }} status ${{ job.status }}" > status.txt
+          git init -q && git add . && git -c user.name=ci -c user.email=ci@localhost commit -qm "tests run ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/ci-log-checks
 
   apk:
     runs-on: ubuntu-latest
