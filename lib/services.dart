@@ -2,10 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'data/additives.dart';
 import 'data/ciqual/food_database.dart';
 import 'data/history_store.dart';
 import 'data/off/off_api.dart';
 import 'data/off/off_repository.dart';
+import 'data/off/open_prices.dart';
 import 'recognition/recognition_settings.dart';
 
 /// Toutes les dépendances de l'app, créées une fois au démarrage.
@@ -17,6 +19,8 @@ class Services {
     required this.history,
     required this.foods,
     required this.recognitionSettings,
+    required this.additives,
+    required this.prices,
   });
 
   final http.Client httpClient;
@@ -25,6 +29,8 @@ class Services {
   final HistoryStore history;
   final FoodDatabase foods;
   final RecognitionSettingsStore recognitionSettings;
+  final AdditiveDatabase additives;
+  final OpenPricesApi prices;
 
   static Future<Services> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -37,6 +43,8 @@ class Services {
       history: HistoryStore(prefs),
       foods: FoodDatabase(),
       recognitionSettings: RecognitionSettingsStore(prefs),
+      additives: AdditiveDatabase(),
+      prices: OpenPricesApi(client),
     );
   }
 }

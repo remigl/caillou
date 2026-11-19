@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 22
       - name: Tests du convertisseur Ciqual
-        run: node --test tool/ciqual_lib.test.mjs
+        run: node --test tool/ciqual_lib.test.mjs tool/additives_lib.test.mjs
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -54,13 +54,21 @@ jobs:
 
       # Si la conversion échoue, l'APK est quand même construit : le scan et la photo
       # fonctionnent, la recherche affiche « Base d'aliments indisponible ».
-      - name: Base Ciqual (générée si absente du dépôt)
+      - name: Base Ciqual (régénérée si absente ou d'un ancien format)
         continue-on-error: true
         run: |
-          if [ ! -f assets/data/ciqual.json ]; then
-            node tool/build_ciqual.mjs 2>&1 | tee -a ci.log || { echo "::warning::Base Ciqual non générée, APK construit sans."; exit 1; }
+          FMT=$(node -e 'try{console.log(require("./assets/data/ciqual.json").formatVersion||1)}catch{console.log(0)}')
+          if [ "$FMT" != "2" ]; then
+            node tool/build_ciqual.mjs 2>&1 | tee -a ci.log || { echo "::warning::Base Ciqual non générée."; exit 1; }
           else
-            echo "assets/data/ciqual.json présent, conversion ignorée." | tee -a ci.log
+            echo "assets/data/ciqual.json à jour (format $FMT)." | tee -a ci.log
+          fi
+
+      - name: Noms des additifs (générés si absents)
+        continue-on-error: true
+        run: |
+          if [ ! -f assets/data/additives.json ]; then
+            node tool/build_additives.mjs 2>&1 | tee -a ci.log || { echo "::warning::Table des additifs non générée."; exit 1; }
           fi
 
       - uses: actions/setup-java@v5
@@ -117,7 +125,7 @@ jobs:
         if: always() && github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/ci-log && cp ci.log /tmp/ci-log/ci.log 2>/dev/null || echo "pas de journal" > /tmp/ci-log/ci.log
-          cp assets/data/ciqual.json /tmp/ci-log/ 2>/dev/null || true
+          cp assets/data/ciqual.json assets/data/additives.json /tmp/ci-log/ 2>/dev/null || true
           cd /tmp/ci-log
           echo "run ${{ github.run_number }} sha ${{ github.sha }} status ${{ job.status }}" > status.txt
           git init -q && git add . && git -c user.name=ci -c user.email=ci@localhost commit -qm "journal run ${{ github.run_number }}"

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum HistoryKind { product, food }
+enum HistoryKind { product, food, photo }
 
 /// Un élément récemment consulté (produit scanné ou aliment Ciqual).
 class HistoryEntry {
@@ -13,6 +13,7 @@ class HistoryEntry {
     this.subtitle,
     this.kcal,
     required this.at,
+    this.items = const [],
   });
 
   final HistoryKind kind;
@@ -24,6 +25,9 @@ class HistoryEntry {
   final String? kcal;
   final DateTime at;
 
+  /// Photo : aliments reconnus (nom, emoji, code Ciqual, confiance...). La photo elle-même n'est pas conservée.
+  final List<Map<String, dynamic>> items;
+
   Map<String, dynamic> toJson() => {
         'k': kind.name,
         'id': id,
@@ -31,6 +35,7 @@ class HistoryEntry {
         if (subtitle != null) 's': subtitle,
         if (kcal != null) 'e': kcal,
         'at': at.millisecondsSinceEpoch,
+        if (items.isNotEmpty) 'i': items,
       };
 
   static HistoryEntry? fromJson(Object? raw) {
@@ -47,6 +52,10 @@ class HistoryEntry {
       subtitle: raw['s'] as String?,
       kcal: raw['e'] as String?,
       at: DateTime.fromMillisecondsSinceEpoch(at.toInt()),
+      items: [
+        for (final it in (raw['i'] is List ? raw['i'] as List : const []))
+          if (it is Map) Map<String, dynamic>.from(it),
+      ],
     );
   }
 }

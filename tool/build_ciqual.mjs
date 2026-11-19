@@ -83,6 +83,8 @@ async function main() {
   console.log('\nCorrespondance des constituants :');
   for (const [k, m] of Object.entries(stats.mapping)) console.log(`  ${k.padEnd(12)} -> ${m.code} ${m.name}`);
   for (const w of stats.warnings) console.warn(`  ⚠ ${w}`);
+  console.log(`\nComposition détaillée : ${stats.details.length} constituants`);
+  for (const d of stats.details) console.log(`  [${d.g}] ${d.n} (${d.u})`);
   console.log(`\n${stats.foods} aliments, ${stats.withKcal} avec énergie (dont ${stats.energyFallback} via facteur de Jones).`);
   if (stats.unreadable) console.warn(`⚠ ${stats.unreadable} teneurs illisibles ignorées (affichées « non disponible »).`);
   if (stats.foods < 1000) throw new Error('Moins de 1000 aliments : conversion suspecte, arrêt.');

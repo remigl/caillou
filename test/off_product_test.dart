@@ -1,6 +1,7 @@
 import 'package:caillou/core/nutrients.dart';
 import 'package:caillou/data/off/off_api.dart';
 import 'package:caillou/data/off/off_product.dart';
+import 'package:caillou/data/off/open_prices.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -75,5 +76,66 @@ void main() {
     expect(OffApi.cleanBarcode(' 3017 6204 22003 '), '3017620422003');
     expect(OffApi.cleanBarcode('abc'), isNull);
     expect(OffApi.cleanBarcode('123'), isNull);
+  });
+
+  test('informations enrichies : additifs, analyse, repères, environnement, Ciqual', () {
+    final p = OffProduct.fromJson({
+      'additives_tags': ['en:e330', 'en:e150d'],
+      'ingredients_analysis_tags': ['en:palm-oil-free', 'en:non-vegan', 'en:vegetarian'],
+      'nutrient_levels': {'fat': 'low', 'sugars': 'high', 'salt': 'bizarre'},
+      'environmental_score_grade': 'b',
+      'environmental_score_data': {
+        'agribalyse': {'co2_total': 1.53}
+      },
+      'origins': 'en:France, Italie',
+      'categories': 'Aliments d\'origine végétale, Pâtes alimentaires, Spaghetti',
+      'categories_properties': {'ciqual_food_code:en': '9811'},
+      'nutriments': {'vitamin-c_100g': 0.012, 'calcium_100g': 0.12, 'vitamin-d_100g': 0.0000025},
+    }, barcode: '12345678');
+    expect(p.additives, ['e330', 'e150d']);
+    expect(p.vegan, Tri.no);
+    expect(p.vegetarian, Tri.yes);
+    expect(p.palmOil, Tri.no);
+    expect(p.nutrientLevels, {'fat': 'low', 'sugars': 'high'});
+    expect(p.environmentalGrade, 'b');
+    expect(p.co2PerKg, 1.53);
+    expect(p.origins, 'France, Italie');
+    expect(p.ciqualCode, 9811);
+    expect(p.categories.last, 'Spaghetti');
+    final extras = {for (final e in p.extraNutrients) e.label: '${e.value.formatAmount()} ${e.unit}'};
+    expect(extras['Vitamine C'], '12 mg');
+    expect(extras['Calcium'], '120 mg');
+    expect(extras['Vitamine D'], '2,5 µg');
+  });
+
+  test('ancien nom du score environnemental et données absentes', () {
+    final p = OffProduct.fromJson({'ecoscore_grade': 'unknown', 'ecoscore_data': {'agribalyse': {}}}, barcode: '12345678');
+    expect(p.environmentalGrade, isNull);
+    expect(p.co2PerKg, isNull);
+    expect(p.vegan, Tri.unknown);
+    expect(p.extraNutrients, isEmpty);
+    expect(p.ciqualCode, isNull);
+  });
+
+  test('Open Prices : parsing tolérant', () {
+    final prices = parsePrices({
+      'items': [
+        {
+          'price': 1.29,
+          'currency': 'EUR',
+          'date': '2026-11-02',
+          'location': {'osm_name': 'Carrefour Market', 'osm_address_city': 'Lyon'},
+          'price_is_discounted': true,
+        },
+        {'price': 'x', 'currency': 'EUR'},
+        {'price': 2.5, 'currency': 'EUR', 'price_per': 'KILOGRAM'},
+      ],
+    });
+    expect(prices, hasLength(2));
+    expect(prices.first.place, 'Carrefour Market, Lyon');
+    expect(prices.first.discounted, isTrue);
+    expect(prices.last.perKilo, isTrue);
+    expect(formatPrice(1.29, 'EUR'), '1,29 €');
+    expect(parsePrices('nimporte quoi'), isEmpty);
   });
 }

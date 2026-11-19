@@ -23,6 +23,7 @@ class CiqualFood {
     required this.nutrition,
     this.nameEn,
     this.group,
+    this.details = const [],
   })  : tokens = tokenize(_searchName(name)),
         tokensEn = nameEn == null ? const [] : tokenize(nameEn),
         firstSegmentKey = phraseKey(_searchName(name).split(',').first) {
@@ -43,6 +44,9 @@ class CiqualFood {
   /// Sous-groupe Ciqual ("fruits", "légumes", "pâtes, riz et céréales"...).
   final String? group;
   final Nutrition nutrition;
+
+  /// Composition détaillée : (index dans [CiqualDataset.detailDefs], valeur). Seules les valeurs connues.
+  final List<(int, NutrientValue)> details;
 
   /// Jetons normalisés du nom français (sans accents, pluriels simples retirés).
   final List<String> tokens;
@@ -94,10 +98,25 @@ class CiqualFood {
   }
 }
 
+/// Constituant de la composition détaillée ("Vitamine C", "mg", "Vitamines").
+class DetailDef {
+  const DetailDef(this.name, this.unit, this.group);
+  final String name;
+  final String unit;
+  final String group;
+}
+
 class CiqualDataset {
-  const CiqualDataset({required this.foods, required this.source, required this.licence, required this.version});
+  const CiqualDataset({
+    required this.foods,
+    required this.source,
+    required this.licence,
+    required this.version,
+    this.detailDefs = const [],
+  });
 
   final List<CiqualFood> foods;
+  final List<DetailDef> detailDefs;
   final String source;
   final String licence;
   final String version;
@@ -108,6 +127,10 @@ CiqualDataset parseCiqualJson(String raw) {
   final json = jsonDecode(raw) as Map<String, dynamic>;
   final keys = (json['nutrients'] as List).cast<String>();
   final index = {for (var i = 0; i < keys.length; i++) keys[i]: i};
+  final defs = <DetailDef>[
+    for (final d in (json['details'] as List? ?? const []))
+      if (d is Map) DetailDef(d['n'] as String? ?? '', d['u'] as String? ?? '', d['g'] as String? ?? 'Autres'),
+  ];
   final foods = <CiqualFood>[];
 
   for (final item in json['foods'] as List) {
@@ -119,8 +142,21 @@ CiqualDataset parseCiqualJson(String raw) {
       return NutrientValue.fromCiqual(v[i]);
     }
 
+    final details = <(int, NutrientValue)>[];
+    final d = m['d'];
+    if (d is List) {
+      for (var i = 0; i + 1 < d.length; i += 2) {
+        final di = d[i];
+        if (di is num && di >= 0 && di < defs.length) {
+          final value = NutrientValue.fromCiqual(d[i + 1]);
+          if (value.isAvailable) details.add((di.toInt(), value));
+        }
+      }
+    }
+
     foods.add(CiqualFood(
       code: (m['c'] as num).toInt(),
+      details: details,
       name: m['n'] as String,
       nameEn: m['e'] as String?,
       group: m['g'] as String?,
@@ -144,5 +180,6 @@ CiqualDataset parseCiqualJson(String raw) {
     source: json['source'] as String? ?? 'Anses, table Ciqual',
     licence: json['licence'] as String? ?? 'Licence Ouverte 2.0',
     version: json['version'] as String? ?? '',
+    detailDefs: defs,
   );
 }

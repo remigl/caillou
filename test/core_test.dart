@@ -1,6 +1,7 @@
 import 'package:caillou/core/nutrients.dart';
 import 'package:caillou/core/text.dart';
 import 'package:caillou/data/food_aliases.dart';
+import 'package:caillou/data/history_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -59,5 +60,21 @@ void main() {
       expect(FoodAliases.expansionFor('broccoli'), 'brocoli');
       expect(FoodAliases.expansionFor('brocoli'), isNull);
     });
+  });
+
+  test('historique : une photo et ses aliments survivent à la sérialisation', () {
+    final e = HistoryEntry(
+      kind: HistoryKind.photo,
+      id: '42',
+      title: 'Pomme, Banane',
+      at: DateTime(2026, 11, 19, 12),
+      items: const [
+        {'n': 'Pomme', 'e': '🍎', 'c': 4, 'p': 0.97},
+      ],
+    );
+    final back = HistoryEntry.fromJson(e.toJson())!;
+    expect(back.kind, HistoryKind.photo);
+    expect(back.items.single['c'], 4);
+    expect(back.items.single['n'], 'Pomme');
   });
 }

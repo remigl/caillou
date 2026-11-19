@@ -1,7 +1,7 @@
 /// Réglages globaux de l'application.
 class AppConfig {
   static const appName = 'Caillou';
-  static const version = '0.1.0';
+  static const version = '0.2.0';
 
   /// Open Food Facts demande un User-Agent identifiant l'app et un contact.
   /// Remplacez l'URL par une adresse e-mail de contact avant une diffusion publique.

@@ -4,6 +4,7 @@ import '../data/ciqual/ciqual_food.dart';
 import '../data/history_store.dart';
 import '../services.dart';
 import 'widgets/common.dart';
+import 'widgets/detailed_composition.dart';
 import 'widgets/nutrition_table.dart';
 
 /// Fiche d'un aliment générique (table Ciqual).
@@ -39,7 +40,9 @@ class _FoodScreenState extends State<FoodScreen> {
     final food = widget.food;
     final theme = Theme.of(context);
     final services = AppScope.of(context);
-    final variants = services.foods.loaded?.variantsOf(food) ?? const <CiqualFood>[];
+    final index = services.foods.loaded;
+    final variants = index?.variantsOf(food) ?? const <CiqualFood>[];
+    final defs = index?.dataset.detailDefs ?? const <DetailDef>[];
     final showsPreparation = food.states.contains(FoodState.raw) || food.states.contains(FoodState.cooked);
 
     return Scaffold(
@@ -62,6 +65,10 @@ class _FoodScreenState extends State<FoodScreen> {
               'Les valeurs changent beaucoup entre cru et cuit (eau absorbée ou perdue) : choisissez la bonne préparation.',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
+          ],
+          if (food.details.isNotEmpty && defs.isNotEmpty) ...[
+            const SectionTitle('Composition détaillée'),
+            DetailedComposition(food: food, defs: defs),
           ],
           if (variants.isNotEmpty) ...[
             const SectionTitle('Autres préparations'),

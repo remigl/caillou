@@ -7,6 +7,11 @@ d'un aliment, de trois façons :
 - **Rechercher** « brocoli », « pâtes », « pomme » → aliments génériques (table Ciqual, hors ligne) ;
 - **Photographier** plusieurs aliments → liste des aliments reconnus, chacun avec ses valeurs / 100 g.
 
+Au-delà des calories : additifs (nom et rôle), végétalien / végétarien / huile de palme, repères
+faible-modéré-élevé, score environnemental et CO₂ (Agribalyse), origine, prix relevés (Open Prices),
+vitamines et minéraux, et pour chaque produit l'aliment générique Ciqual comparable avec sa composition
+détaillée.
+
 Pas de quantités, pas de compte, pas de score maison. Toute donnée absente est affichée
 « Non disponible ».
 
@@ -41,7 +46,7 @@ flutter test
 flutter run                       # ou : flutter build apk --release
 ```
 
-Tests du convertisseur Ciqual : `node --test tool/ciqual_lib.test.mjs`.
+Tests du convertisseur Ciqual : `node --test tool/ciqual_lib.test.mjs tool/additives_lib.test.mjs`.
 
 ## Reconnaissance photo
 

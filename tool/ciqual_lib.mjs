@@ -114,22 +114,84 @@ export function mapConstituents(constRecords) {
   return { mapping, warnings };
 }
 
+
+/** Format de l'asset : 2 = valeurs principales + composition détaillée. */
+export const FORMAT_VERSION = 2;
+
+/** "Calcium (mg/100 g)" -> { label: "Calcium", unit: "mg" }. */
+export function splitUnit(name) {
+  const m = name.match(/\(\s*([^()]*?)\s*\/\s*100\s*g\s*\)\s*$/i);
+  const unit = m ? m[1].replace('ug', 'µg') : '';
+  const label = (m ? name.slice(0, m.index) : name).trim().replace(/[,\s]+$/, '');
+  return { label, unit };
+}
+
+const FRIENDLY = [
+  [/^AG monoinsatur/i, 'Acides gras monoinsaturés'],
+  [/^AG polyinsatur/i, 'Acides gras polyinsaturés'],
+  [/^AG satur/i, 'Acides gras saturés'],
+  [/^AG 18:2.*linol[ée]ique/i, 'Oméga-6 : acide linoléique'],
+  [/^AG 18:3.*alpha-linol[ée]nique/i, 'Oméga-3 : acide alpha-linolénique (ALA)'],
+  [/^AG 20:4.*arachidonique/i, 'Oméga-6 : acide arachidonique'],
+  [/^AG 20:5.*EPA/i, 'Oméga-3 : EPA'],
+  [/^AG 22:6.*DHA/i, 'Oméga-3 : DHA'],
+  [/^AG 18:1.*ol[ée]ique/i, 'Oméga-9 : acide oléique'],
+];
+
+export function friendlyLabel(label) {
+  for (const [re, out] of FRIENDLY) if (re.test(label)) return out;
+  return label.replace(/^AG /, 'Acide gras ');
+}
+
+const MINERALS = ['sodium', 'calcium', 'chlorure', 'cuivre', 'fer', 'iode', 'magnesium', 'manganese', 'phosphore', 'potassium', 'selenium', 'zinc'];
+
+export function detailGroup(label) {
+  const n = normalize(label);
+  if (/^(vitamine|retinol|beta-carot|beta carot|caroten)/.test(n)) return 'Vitamines';
+  if (MINERALS.some((m) => n === m || n.startsWith(m + ' '))) return 'Minéraux et oligo-éléments';
+  if (/^(ag |acide gras|acides gras|omega|cholest)/.test(n)) return 'Lipides';
+  if (/^(amidon|fructose|galactose|glucose|lactose|maltose|saccharose|polyols|fibres)/.test(n)) return 'Glucides';
+  return 'Autres';
+}
+
+const GROUP_ORDER = ['Glucides', 'Lipides', 'Minéraux et oligo-éléments', 'Vitamines', 'Autres'];
+
 /** Construit l'objet JSON final à partir des enregistrements parsés. */
 export function buildDataset({ alim, compo, constants, groups, version, source }) {
   const { mapping, warnings } = mapConstituents(constants);
   const codeToKey = new Map();
   for (const [key, m] of Object.entries(mapping)) codeToKey.set(String(m.code), key);
 
+  // Composition détaillée : tous les autres constituants (vitamines, minéraux, acides gras...).
+  const usedCodes = new Set(codeToKey.keys());
+  const details = constants
+    .filter((c) => c.const_code && c.const_nom_fr && !usedCodes.has(String(c.const_code)))
+    .map((c) => {
+      const { label, unit } = splitUnit(c.const_nom_fr);
+      const nice = friendlyLabel(label);
+      return { code: String(c.const_code), n: nice, u: unit, g: detailGroup(nice) };
+    })
+    .filter((d) => d.u && !/^energie/i.test(normalize(d.n)))
+    .sort((a, b) => GROUP_ORDER.indexOf(a.g) - GROUP_ORDER.indexOf(b.g));
+  const detailIndex = new Map(details.map((d, i) => [d.code, i]));
+
   const values = new Map(); // alim_code -> {key: value}
+  const detailValues = new Map(); // alim_code -> [index, valeur, index, valeur...]
   let unreadable = 0;
   for (const c of compo) {
+    const code = String(c.alim_code);
     const key = codeToKey.get(String(c.const_code));
-    if (!key) continue;
+    const di = detailIndex.get(String(c.const_code));
+    if (!key && di === undefined) continue;
     const v = parseTeneur(c.teneur);
     if (v === undefined) { unreadable++; continue; }
-    const code = String(c.alim_code);
-    if (!values.has(code)) values.set(code, {});
-    values.get(code)[key] = v;
+    if (key) {
+      if (!values.has(code)) values.set(code, {});
+      values.get(code)[key] = v;
+    } else if (v !== null) {
+      if (!detailValues.has(code)) detailValues.set(code, []);
+      detailValues.get(code).push(di, v);
+    }
   }
 
   const subgroupNames = new Map();
@@ -163,6 +225,8 @@ export function buildDataset({ alim, compo, constants, groups, version, source }
     const sg = subgroupNames.get(String(a.alim_ssgrp_code));
     if (sg) food.g = sg;
     if (ef) food.ef = 1;
+    const d = detailValues.get(String(a.alim_code));
+    if (d && d.length) food.d = d;
     foods.push(food);
   }
   foods.sort((x, y) => x.n.localeCompare(y.n, 'fr'));
@@ -173,9 +237,11 @@ export function buildDataset({ alim, compo, constants, groups, version, source }
       licence: 'Licence Ouverte / Open Licence 2.0 (Etalab)',
       version,
       basis: '100 g de partie comestible',
+      formatVersion: FORMAT_VERSION,
       nutrients: NUTRIENT_KEYS,
+      details: details.map(({ n, u, g }) => ({ n, u, g })),
       foods,
     },
-    stats: { foods: foods.length, withKcal, energyFallback, unreadable, mapping, warnings },
+    stats: { foods: foods.length, withKcal, energyFallback, unreadable, mapping, warnings, details },
   };
 }

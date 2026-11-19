@@ -83,6 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (e.kind) {
       case HistoryKind.product:
         _go(ProductScreen(barcode: e.id));
+      case HistoryKind.photo:
+        _go(PhotoScreen(saved: e));
       case HistoryKind.food:
         try {
           final index = await services.foods.load();
@@ -213,7 +215,11 @@ class _HomeContent extends StatelessWidget {
                 for (final e in history.take(10))
                   ListTile(
                     leading: Icon(
-                      e.kind == HistoryKind.product ? Icons.inventory_2_outlined : Icons.eco_outlined,
+                      switch (e.kind) {
+                        HistoryKind.product => Icons.inventory_2_outlined,
+                        HistoryKind.food => Icons.eco_outlined,
+                        HistoryKind.photo => Icons.photo_camera_outlined,
+                      },
                       color: theme.colorScheme.primary,
                     ),
                     title: Text(e.title, maxLines: 1, overflow: TextOverflow.ellipsis),

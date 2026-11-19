@@ -1,7 +1,7 @@
 // Tests du convertisseur Ciqual : node --test tool/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDataset, decodeXml, parseRecords, parseTeneur, NUTRIENT_KEYS } from './ciqual_lib.mjs';
+import { buildDataset, decodeXml, parseRecords, parseTeneur, splitUnit, friendlyLabel, detailGroup, NUTRIENT_KEYS } from './ciqual_lib.mjs';
 
 const CONST_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <TABLE>
@@ -18,6 +18,9 @@ const CONST_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <CONST><const_code> 40302 </const_code><const_nom_fr> AG saturés (g/100 g) </const_nom_fr></CONST>
 <CONST><const_code> 10004 </const_code><const_nom_fr> Sel chlorure de sodium (g/100 g) </const_nom_fr></CONST>
 <CONST><const_code> 400 </const_code><const_nom_fr> Eau (g/100 g) </const_nom_fr></CONST>
+<CONST><const_code> 10200 </const_code><const_nom_fr> Calcium (mg/100 g) </const_nom_fr></CONST>
+<CONST><const_code> 55100 </const_code><const_nom_fr> Vitamine C (mg/100 g) </const_nom_fr></CONST>
+<CONST><const_code> 41833 </const_code><const_nom_fr> AG 18:3 c9,c12,c15 (n-3), alpha-linolénique (g/100 g) </const_nom_fr></CONST>
 </TABLE>`;
 
 const ALIM_XML = `<TABLE>
@@ -41,6 +44,8 @@ const COMPO_XML = `<TABLE>
 <COMPO><alim_code> 20057 </alim_code><const_code> 328 </const_code><teneur> 34 </teneur></COMPO>
 <COMPO><alim_code> 20057 </alim_code><const_code> 25000 </const_code><teneur> 2,8 </teneur></COMPO>
 <COMPO><alim_code> 20057 </alim_code><const_code> 400 </const_code><teneur> 89 </teneur></COMPO>
+<COMPO><alim_code> 20057 </alim_code><const_code> 55100 </const_code><teneur> 89,2 </teneur></COMPO>
+<COMPO><alim_code> 20057 </alim_code><const_code> 10200 </const_code><teneur> - </teneur></COMPO>
 </TABLE>`;
 
 test('parseTeneur', () => {
@@ -97,4 +102,33 @@ test('buildDataset échoue si un constituant obligatoire manque', () => {
   assert.throws(() =>
     buildDataset({ alim: [], compo: [], constants: [], groups: [], version: 't', source: 't' }),
   );
+});
+
+test('composition détaillée : unités, libellés, groupes', () => {
+  assert.deepEqual(splitUnit('Vitamine B9 ou Folates totaux (µg/100 g)'), { label: 'Vitamine B9 ou Folates totaux', unit: 'µg' });
+  assert.equal(friendlyLabel('AG 22:6 4c,7c,10c,13c,16c,19c (n-3) DHA'), 'Oméga-3 : DHA');
+  assert.equal(detailGroup('Calcium'), 'Minéraux et oligo-éléments');
+  assert.equal(detailGroup('Vitamine C'), 'Vitamines');
+  assert.equal(detailGroup('Amidon'), 'Glucides');
+  assert.equal(detailGroup('Eau'), 'Autres');
+
+  const { dataset } = buildDataset({
+    alim: parseRecords(ALIM_XML, 'ALIM'),
+    compo: parseRecords(COMPO_XML, 'COMPO'),
+    constants: parseRecords(CONST_XML, 'CONST'),
+    groups: parseRecords(GRP_XML, 'ALIM_GRP'),
+    version: 'test',
+    source: 'test',
+  });
+  assert.equal(dataset.formatVersion, 2);
+  const names = dataset.details.map((d) => d.n);
+  assert.ok(names.includes('Vitamine C') && names.includes('Calcium') && names.includes('Eau'));
+  assert.ok(names.includes('Oméga-3 : acide alpha-linolénique (ALA)'));
+  assert.ok(!names.some((n) => /Lipides|Energie|Protéines/.test(n))); // déjà dans le tableau principal
+  const brocoli = dataset.foods.find((f) => f.c === 20057);
+  const vitC = names.indexOf('Vitamine C');
+  const ca = names.indexOf('Calcium');
+  const pairs = Object.fromEntries(brocoli.d.reduce((acc, x, i, arr) => (i % 2 ? acc : [...acc, [arr[i], arr[i + 1]]]), []));
+  assert.equal(pairs[vitC], 89.2);
+  assert.equal(pairs[ca], undefined); // absent -> non stocké
 });

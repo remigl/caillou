@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../data/ciqual/food_index.dart';
+import '../data/history_store.dart';
 import '../recognition/food_matcher.dart';
 import '../recognition/food_recognizer.dart';
 import '../recognition/remote_vision_recognizer.dart';
@@ -13,10 +14,16 @@ import 'settings_screen.dart';
 import 'widgets/common.dart';
 
 /// Photo de plusieurs aliments -> liste des aliments reconnus + valeurs pour 100 g.
+/// Le résultat est enregistré dans l'historique dès l'analyse, puis mis à jour à chaque correction.
 class PhotoScreen extends StatefulWidget {
-  const PhotoScreen({super.key, required this.imageBytes});
+  const PhotoScreen({super.key, this.imageBytes, this.saved})
+      : assert(imageBytes != null || saved != null);
 
-  final Uint8List imageBytes;
+  /// Nouvelle photo à analyser.
+  final Uint8List? imageBytes;
+
+  /// Résultat déjà enregistré dans l'historique (la photo n'est pas conservée).
+  final HistoryEntry? saved;
 
   @override
   State<PhotoScreen> createState() => _PhotoScreenState();
@@ -26,6 +33,8 @@ class _PhotoScreenState extends State<PhotoScreen> {
   Future<List<RecognizedItem>>? _future;
   List<RecognizedItem>? _items;
   FoodIndex? _index;
+  late final String _historyId = widget.saved?.id ?? '${DateTime.now().millisecondsSinceEpoch}';
+  late final DateTime _takenAt = widget.saved?.at ?? DateTime.now();
 
   @override
   void didChangeDependencies() {
@@ -35,16 +44,69 @@ class _PhotoScreenState extends State<PhotoScreen> {
 
   Future<List<RecognizedItem>> _analyze() async {
     final services = AppScope.of(context);
-    final recognizer = RemoteVisionRecognizer(services.httpClient, services.recognitionSettings.load());
-    final detections = await recognizer.recognize(widget.imageBytes);
+    final saved = widget.saved;
+    final bytes = widget.imageBytes;
+    List<DetectedFood> detections = const [];
+    if (saved == null && bytes != null) {
+      final recognizer = RemoteVisionRecognizer(services.httpClient, services.recognitionSettings.load());
+      detections = await recognizer.recognize(bytes);
+    }
     try {
       _index = await services.foods.load();
     } catch (_) {
       _index = null; // On affiche quand même les aliments reconnus.
     }
-    final items = FoodMatcher(_index).resolveAll(detections);
+    final List<RecognizedItem> items;
+    if (saved != null) {
+      items = saved.items.map(_restore).toList();
+    } else {
+      items = FoodMatcher(_index).resolveAll(detections);
+    }
     _items = items;
+    if (saved == null) await _saveHistory(services);
     return items;
+  }
+
+  RecognizedItem _restore(Map<String, dynamic> m) {
+    final code = m['c'];
+    return RecognizedItem(
+      detection: DetectedFood(
+        nameEn: m['en'] as String? ?? '',
+        nameFr: m['fr'] as String? ?? '',
+        confidence: (m['p'] as num?)?.toDouble() ?? 0.0,
+      ),
+      displayName: m['n'] as String? ?? '?',
+      emoji: m['e'] as String? ?? '🍽️',
+      match: code is num ? _index?.byCode(code.toInt()) : null,
+      confirmed: m['ok'] == true,
+    );
+  }
+
+  /// Une entrée d'historique par photo, mise à jour à chaque modification.
+  Future<void> _saveHistory([Services? s]) async {
+    final services = s ?? AppScope.of(context);
+    final items = _items ?? const <RecognizedItem>[];
+    if (items.isEmpty) return;
+    final names = items.map((i) => i.displayName).toList();
+    await services.history.add(HistoryEntry(
+      kind: HistoryKind.photo,
+      id: _historyId,
+      title: names.length > 3 ? '${names.take(3).join(', ')}…' : names.join(', '),
+      subtitle: 'Photo · ${items.length} aliment${items.length > 1 ? 's' : ''}',
+      at: _takenAt,
+      items: [
+        for (final i in items)
+          {
+            'n': i.displayName,
+            'e': i.emoji,
+            if (i.match != null) 'c': i.match!.code,
+            'p': i.detection.confidence,
+            'en': i.detection.nameEn,
+            'fr': i.detection.nameFr,
+            if (i.confirmed) 'ok': true,
+          },
+      ],
+    ));
   }
 
   void _retry() => setState(() {
@@ -62,11 +124,18 @@ class _PhotoScreenState extends State<PhotoScreen> {
       item.displayName = food.name.split(',').first;
       item.confirmed = true;
     });
+    _saveHistory();
   }
 
-  void _confirm(RecognizedItem item) => setState(() => item.confirmed = true);
+  void _confirm(RecognizedItem item) {
+    setState(() => item.confirmed = true);
+    _saveHistory();
+  }
 
-  void _remove(RecognizedItem item) => setState(() => _items?.remove(item));
+  void _remove(RecognizedItem item) {
+    setState(() => _items?.remove(item));
+    _saveHistory();
+  }
 
   Future<void> _addManually() async {
     final index = _index;
@@ -82,6 +151,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
         confirmed: true,
       ));
     });
+    _saveHistory();
   }
 
   @override
@@ -91,7 +161,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
       body: FutureBuilder<List<RecognizedItem>>(
         future: _future,
         builder: (context, snap) {
-          final header = _PhotoHeader(bytes: widget.imageBytes);
+          final header = _PhotoHeader(bytes: widget.imageBytes, takenAt: _takenAt);
           if (snap.connectionState != ConnectionState.done) {
             return ListView(padding: const EdgeInsets.all(16), children: [
               header,
@@ -181,14 +251,25 @@ class _PhotoScreenState extends State<PhotoScreen> {
 }
 
 class _PhotoHeader extends StatelessWidget {
-  const _PhotoHeader({required this.bytes});
-  final Uint8List bytes;
+  const _PhotoHeader({required this.bytes, required this.takenAt});
+  final Uint8List? bytes;
+  final DateTime takenAt;
 
   @override
   Widget build(BuildContext context) {
+    final b = bytes;
+    if (b == null) {
+      final theme = Theme.of(context);
+      final d = takenAt;
+      String two(int v) => v.toString().padLeft(2, '0');
+      return Text(
+        'Photo du ${two(d.day)}/${two(d.month)}/${d.year} à ${two(d.hour)}h${two(d.minute)} (image non conservée)',
+        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      );
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
-      child: Image.memory(bytes, height: 180, width: double.infinity, fit: BoxFit.cover, gaplessPlayback: true),
+      child: Image.memory(b, height: 180, width: double.infinity, fit: BoxFit.cover, gaplessPlayback: true),
     );
   }
 }

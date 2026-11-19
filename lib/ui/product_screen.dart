@@ -8,6 +8,7 @@ import '../services.dart';
 import 'scanner_screen.dart';
 import 'widgets/common.dart';
 import 'widgets/nutrition_table.dart';
+import 'widgets/product_sections.dart';
 
 /// Fiche d'un produit emballé (Open Food Facts).
 class ProductScreen extends StatefulWidget {
@@ -180,17 +181,42 @@ class _ProductView extends StatelessWidget {
           )
         else
           NutritionTable(nutrition: p.nutrition, basis: p.isLiquid ? 'Pour 100 ml' : 'Pour 100 g'),
-        _InfoSection(title: 'Catégorie', text: p.category),
-        _InfoSection(title: 'Ingrédients', text: p.ingredients),
+        NutrientLevels(levels: p.nutrientLevels),
+        if (p.extraNutrients.isNotEmpty) ...[
+          const SectionTitle('Autres nutriments déclarés'),
+          ExtraNutrientsPanel(extras: p.extraNutrients),
+        ],
+        GenericEquivalentCard(product: p),
+        const SectionTitle('Ingrédients'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            p.ingredients ?? 'Non renseignés.',
+            style: p.ingredients == null
+                ? theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic)
+                : theme.textTheme.bodyMedium,
+          ),
+        ),
+        IngredientsAnalysis(product: p),
         _InfoSection(title: 'Allergènes', text: p.allergens.isEmpty ? null : p.allergens.join(', '),
             emptyText: 'Aucun allergène renseigné (ce qui ne garantit pas leur absence).'),
         if (p.traces.isNotEmpty) _InfoSection(title: 'Traces éventuelles', text: p.traces.join(', ')),
+        SectionTitle('Additifs${p.additives.isEmpty ? '' : ' (${p.additives.length})'}'),
+        AdditivesSection(codes: p.additives),
+        if (p.environmentalGrade != null || p.co2PerKg != null) ...[
+          const SectionTitle('Environnement'),
+          EnvironmentPanel(product: p),
+        ],
+        PricesSection(barcode: p.barcode),
+        if (p.origins != null) _InfoSection(title: 'Origine des ingrédients', text: p.origins),
+        if (p.manufacturingPlaces != null) _InfoSection(title: 'Lieu de fabrication', text: p.manufacturingPlaces),
+        _InfoSection(title: 'Catégorie', text: p.category),
         _InfoSection(title: 'Labels', text: p.labels.isEmpty ? null : p.labels.join(', '), emptyText: 'Aucun label renseigné.'),
         const SizedBox(height: 24),
         Text(
-          'Code-barres ${p.barcode}. Données : Open Food Facts et ses contributeurs (licence ODbL), '
-          'photos sous licence CC BY-SA. Données collaboratives : vérifiez l\'emballage en cas de doute '
-          '(allergies notamment).',
+          'Code-barres ${p.barcode}. Données : Open Food Facts, Open Prices et leurs contributeurs (licence ODbL), '
+          'photos sous licence CC BY-SA ; Agribalyse (ADEME) ; Ciqual (Anses, Licence Ouverte). '
+          'Données collaboratives : vérifiez l\'emballage en cas de doute (allergies notamment).',
           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
       ],

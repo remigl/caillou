@@ -47,6 +47,22 @@
   énergie kJ/kcal (UE 1169/2011, repli Jones), lipides, AG saturés, glucides, sucres, fibres
   alimentaires, protéines (N × facteur de Jones, repli N × 6,25), sel.
 
+## Sources croisées sur la fiche produit
+
+| Information | Source | Licence | Remarque |
+|---|---|---|---|
+| Additifs (nom, rôle) | Taxonomie des additifs Open Food Facts, embarquée (`tool/build_additives.mjs`) | ODbL | code E seul si la table manque |
+| Végétalien / végétarien / huile de palme | Analyse des ingrédients Open Food Facts (`ingredients_analysis_tags`) | ODbL | déduite de la liste d'ingrédients, peut être « inconnu » |
+| Repères faible / modéré / élevé | `nutrient_levels` d'Open Food Facts | ODbL | seuils de l'agence britannique FSA, pour 100 g |
+| Score environnemental, kg CO₂e / kg | Open Food Facts, à partir d'**Agribalyse** (ADEME) | ODbL / Licence Ouverte | impact moyen de la **catégorie**, pas mesuré sur le produit |
+| Prix relevés | **Open Prices** (projet Open Food Facts) | ODbL | prix saisis par des contributeurs, datés et localisés ; section masquée si indisponible |
+| Vitamines, minéraux, acides gras (produit) | `nutriments` Open Food Facts | ODbL | seulement si déclarés sur l'emballage |
+| Aliment générique comparable | Code Ciqual associé à la catégorie par Open Food Facts (`categories_properties`), sinon correspondance de nom | Ciqual : Licence Ouverte 2.0 | valeurs moyennes d'un aliment comparable, signalées comme telles |
+
+La composition détaillée Ciqual (vitamines, minéraux, oligo-éléments, acides gras, oméga-3/6, eau, amidon…)
+est extraite pour chaque aliment : tous les constituants publiés par l'Anses, sauf ceux déjà dans le tableau
+principal. Seules les valeurs renseignées sont affichées.
+
 ## Reconnaissance d'image
 
 - Pas une source de données nutritionnelles : elle ne fait que **nommer** les aliments ;

@@ -1,6 +1,8 @@
 import 'package:caillou/core/nutrients.dart';
 import 'package:caillou/data/ciqual/ciqual_food.dart';
 import 'package:caillou/data/ciqual/food_index.dart';
+import 'package:caillou/data/cross_reference.dart';
+import 'package:caillou/data/off/off_product.dart';
 import 'package:caillou/recognition/food_matcher.dart';
 import 'package:caillou/recognition/food_recognizer.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -129,6 +131,22 @@ void main() {
       final item = matcher.resolve(const DetectedFood(nameEn: 'dragon fruit', nameFr: 'pitaya', confidence: 0.8));
       expect(item.match, isNull);
       expect(item.displayName, 'Pitaya');
+    });
+  });
+
+  group('Croisement produit -> aliment générique', () {
+    final index = sampleIndex();
+
+    test('code Ciqual fourni par Open Food Facts', () {
+      const p = OffProduct(barcode: '1', nutrition: Nutrition(), ciqualCode: 4);
+      expect(genericEquivalent(p, index)!.code, 4);
+    });
+
+    test('sinon la catégorie la plus précise, seulement si elle correspond nettement', () {
+      const p = OffProduct(barcode: '1', nutrition: Nutrition(), categories: ['Aliments végétaux', 'Tomate']);
+      expect(genericEquivalent(p, index)!.code, 11);
+      const q = OffProduct(barcode: '1', nutrition: Nutrition(), categories: ['Snacks', 'Spaghetti']);
+      expect(genericEquivalent(q, index), isNull);
     });
   });
 }

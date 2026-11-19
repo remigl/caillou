@@ -91,44 +91,71 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ),
         ],
       ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          MobileScanner(controller: _controller, onDetect: _onDetect),
-          IgnorePointer(
-            child: Center(
-              child: Container(
-                width: 280,
-                height: 160,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white, width: 2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
+      body: LayoutBuilder(builder: (context, constraints) {
+        // Zone de lecture : seuls les codes-barres entièrement dans le cadre sont pris en compte.
+        final size = constraints.biggest;
+        final width = (size.width - 48).clamp(200.0, 340.0).toDouble();
+        final window = Rect.fromCenter(
+          center: Offset(size.width / 2, size.height * 0.42),
+          width: width,
+          height: width * 0.55,
+        );
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            MobileScanner(controller: _controller, onDetect: _onDetect, scanWindow: window),
+            IgnorePointer(child: CustomPaint(painter: _ScanWindowPainter(window))),
+            Positioned(
+              left: 24,
+              right: 24,
+              top: window.bottom + 20,
+              child: const Text(
+                'Placez le code-barres dans le cadre',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
-          ),
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: 32,
-            child: Column(
-              children: [
-                const Text(
-                  'Placez le code-barres dans le cadre',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-                const SizedBox(height: 12),
-                FilledButton.tonalIcon(
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: 32,
+              child: Center(
+                child: FilledButton.tonalIcon(
                   onPressed: _manualEntry,
                   icon: const Icon(Icons.keyboard),
                   label: const Text('Saisir le code'),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
   }
+}
+
+/// Assombrit tout sauf le cadre de lecture.
+class _ScanWindowPainter extends CustomPainter {
+  const _ScanWindowPainter(this.window);
+  final Rect window;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final frame = RRect.fromRectAndRadius(window, const Radius.circular(20));
+    final outside = Path()
+      ..addRect(Offset.zero & size)
+      ..addRRect(frame)
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(outside, Paint()..color = const Color(0x99000000));
+    canvas.drawRRect(
+      frame,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ScanWindowPainter old) => old.window != window;
 }
