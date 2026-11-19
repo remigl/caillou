@@ -17,4 +17,19 @@ elif [ -f android/app/build.gradle ]; then
   rm -f android/app/build.gradle.bak
 fi
 
+
+# Le « lint vital » d'Android plante sur certains plugins tiers (image_picker) : on le désactive
+# pour le build release (les vérifications Dart restent faites par `flutter analyze`).
+if [ -f "$GRADLE" ] && ! grep -q "checkReleaseBuilds" "$GRADLE"; then
+  cat >> "$GRADLE" <<'KTS'
+
+android {
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+}
+KTS
+fi
+
 echo "Projet Android prêt (android/)."

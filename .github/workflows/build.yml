@@ -66,7 +66,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - uses: subosito/flutter-action@v2
         with:
@@ -109,6 +109,7 @@ jobs:
         if: always() && github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/ci-log && cp ci.log /tmp/ci-log/ci.log 2>/dev/null || echo "pas de journal" > /tmp/ci-log/ci.log
+          cp assets/data/ciqual.json /tmp/ci-log/ 2>/dev/null || true
           cd /tmp/ci-log
           echo "run ${{ github.run_number }} sha ${{ github.sha }} status ${{ job.status }}" > status.txt
           git init -q && git add . && git -c user.name=ci -c user.email=ci@localhost commit -qm "journal run ${{ github.run_number }}"
