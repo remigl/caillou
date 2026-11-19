@@ -26,23 +26,26 @@ class FoodIndex {
 
   List<ScoredFood> searchScored(String query, {int limit = 40}) {
     final expansion = FoodAliases.expansionFor(query);
-    final queries = <List<String>>[
-      tokenize(query),
-      if (expansion != null) tokenize(expansion),
-    ].where((q) => q.isNotEmpty).toList();
+    // La requête réécrite par un alias ("pâtes" -> "pates seches") est un signal plus précis : +10.
+    final queries = <(List<String>, double)>[
+      (tokenize(query), 0.0),
+      if (expansion != null) (tokenize(expansion), 10.0),
+    ].where((q) => q.$1.isNotEmpty).toList();
     if (queries.isEmpty) return const [];
     final results = <ScoredFood>[];
 
     for (final f in dataset.foods) {
       double? best;
-      for (final q in queries) {
+      for (final (q, boost) in queries) {
         final qKey = q.join(' ');
         var score = _scoreTokens(q, qKey, f.tokens, f.firstSegmentKey);
+        if (score != null) score += f.rankBonus;
         if (score == null && f.tokensEn.isNotEmpty) {
           // Repli sur le nom anglais Ciqual ("broccoli", "apple"...), moins prioritaire.
           final en = _scoreTokens(q, qKey, f.tokensEn, phraseKey((f.nameEn ?? '').split(',').first));
-          if (en != null) score = en - 25;
+          if (en != null) score = en - 25 + f.rankBonus;
         }
+        if (score != null) score += boost;
         if (score != null && (best == null || score > best)) best = score;
       }
       if (best != null) results.add(ScoredFood(f, best));
@@ -68,7 +71,7 @@ class FoodIndex {
     if (firstSegment == qKey) {
       score += 100; // "Brocoli, cru" pour "brocoli"
     } else if (firstSegment.startsWith(qKey)) {
-      score += 40; // "Pâtes alimentaires, cuites" pour "pâtes"
+      score += 60; // "Oeuf dur" pour "oeuf"
     }
     if (name.first == q.first) score += 20;
     score -= name.length * 1.5; // les noms simples d'abord

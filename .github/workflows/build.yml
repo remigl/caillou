@@ -3,6 +3,7 @@ name: Build APK
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -84,25 +85,27 @@ jobs:
         run: flutter build apk --release 2>&1 | tee -a ci.log
 
       - name: Renommer l'APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk caillou-${{ github.run_number }}.apk
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then NAME="caillou-${GITHUB_REF_NAME}.apk"; else NAME="caillou-build-${{ github.run_number }}.apk"; fi
+          cp build/app/outputs/flutter-apk/app-release.apk "$NAME"
+          echo "APK_NAME=$NAME" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v4
         with:
           name: caillou-apk
-          path: caillou-${{ github.run_number }}.apk
+          path: ${{ env.APK_NAME }}
 
-      - name: Publier une pré-version téléchargeable
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      # Tag vX.Y.Z -> version publiée ; push sur main -> pré-version de test build-N.
+      - name: Publier la version
+        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Caillou — build ${{ github.run_number }}
-          prerelease: true
-          body: |
-            APK de test construit depuis ${{ github.sha }}.
-            Installation : télécharger le fichier .apk sur le téléphone puis l'ouvrir
-            (autoriser l'installation depuis cette source). Désinstaller la version précédente si Android refuse la mise à jour.
-          files: caillou-${{ github.run_number }}.apk
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && format('Caillou {0}', github.ref_name) || format('Caillou — build {0} (test)', github.run_number) }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          make_latest: ${{ startsWith(github.ref, 'refs/tags/') && 'true' || 'false' }}
+          body_path: RELEASE_NOTES.md
+          files: ${{ env.APK_NAME }}
 
       # Journal lisible sans connexion (git fetch origin ci-log), utile pour diagnostiquer un échec.
       - name: Publier le journal de build

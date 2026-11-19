@@ -5,11 +5,11 @@ import 'package:caillou/recognition/food_matcher.dart';
 import 'package:caillou/recognition/food_recognizer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-CiqualFood food(int code, String name, double kcal, {String? en}) => CiqualFood(
+CiqualFood food(int code, String name, double kcal, {String? en, bool noEnergy = false}) => CiqualFood(
       code: code,
       name: name,
       nameEn: en,
-      nutrition: Nutrition(energyKcal: NutrientValue.exact(kcal)),
+      nutrition: Nutrition(energyKcal: noEnergy ? NutrientValue.missing : NutrientValue.exact(kcal)),
     );
 
 FoodIndex sampleIndex() => FoodIndex(CiqualDataset(
@@ -23,11 +23,17 @@ FoodIndex sampleIndex() => FoodIndex(CiqualDataset(
         food(4, 'Pomme, pulpe et peau, crue', 52, en: 'Apple, pulp and peel, raw'),
         food(5, 'Pomme de terre, cuite à l\'eau', 80, en: 'Potato, boiled'),
         food(6, 'Compote de pomme', 70),
-        food(7, 'Pâtes alimentaires, cuites', 150, en: 'Pasta, cooked'),
-        food(8, 'Pâté de campagne', 300),
+        food(7, 'Pâtes sèches, standard, cuites, sans sel ajouté', 167, en: 'Pasta, cooked'),
+        food(8, 'Pâté (aliment moyen)', 325),
         food(9, 'Carotte, crue', 36, en: 'Carrot, raw'),
         food(10, 'Banane, pulpe, crue', 90, en: 'Banana, pulp, raw'),
-        food(11, 'Tomate, crue', 19, en: 'Tomato, raw'),
+        food(11, 'Tomate sans précision, crue (aliment moyen)', 19.2, en: 'Tomato, raw'),
+        food(12, 'Tomate, séchée', 0, noEnergy: true),
+        food(13, 'Tomate, entière, crue, prélevée à la Martinique', 0, noEnergy: true),
+        food(14, 'Tomate, concentré, appertisé', 99.2),
+        food(15, 'Oeuf, en poudre', 587),
+        food(16, 'Oeuf dur', 134),
+        food(17, 'Pomme, sèche', 247),
       ],
     ));
 
@@ -76,6 +82,14 @@ void main() {
       expect(index.variantsOf(index.byCode(1)!).map((f) => f.code), containsAll([2, 3]));
     });
 
+    test('aliment moyen avant échantillons régionaux, séchés, conserves', () {
+      expect(index.search('tomate').first.code, 11);
+      expect(index.search('pâté').first.code, 8);
+      expect(index.search('oeuf').first.code, 16);
+      expect(index.byCode(17)!.states, contains(FoodState.dried));
+      expect(index.byCode(7)!.states, isNot(contains(FoodState.dried))); // « pâtes sèches »
+    });
+
     test('nom anglais en repli', () {
       expect(index.search('broccoli').first.code, 1);
       expect(index.search('pasta').first.code, 7);
@@ -93,6 +107,7 @@ void main() {
         DetectedFood(nameEn: 'banana', nameFr: 'banane', confidence: 0.95),
         DetectedFood(nameEn: 'tomato', nameFr: 'tomate', confidence: 0.4),
         DetectedFood(nameEn: 'tomatoes', nameFr: 'tomates', confidence: 0.3),
+        DetectedFood(nameEn: 'egg', nameFr: 'œuf', confidence: 0.9),
       ]);
       final byName = {for (final i in items) i.displayName: i};
       expect(byName['Pomme']!.match!.code, 4);
@@ -102,6 +117,7 @@ void main() {
       expect(items.where((i) => i.match?.code == 11), hasLength(1));
       expect(byName['Tomate']!.needsReview, isTrue);
       expect(byName['Pomme']!.needsReview, isFalse);
+      expect(byName['Œuf']!.match!.code, 16);
     });
 
     test('état cuit détecté sur la photo', () {

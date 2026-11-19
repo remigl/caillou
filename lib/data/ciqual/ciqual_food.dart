@@ -23,11 +23,18 @@ class CiqualFood {
     required this.nutrition,
     this.nameEn,
     this.group,
-  })  : tokens = tokenize(name),
+  })  : tokens = tokenize(_searchName(name)),
         tokensEn = nameEn == null ? const [] : tokenize(nameEn),
-        firstSegmentKey = phraseKey(name.split(',').first) {
-    states = _detectStates(tokens);
+        firstSegmentKey = phraseKey(_searchName(name).split(',').first) {
+    final laterSegments = tokenize(_searchName(name).split(',').skip(1).join(' '));
+    states = _detectStates(tokens, laterSegments);
+    rankBonus = _rankBonus();
   }
+
+  /// "Tomate sans précision, crue (aliment moyen)" -> "Tomate , crue" pour la recherche.
+  static String _searchName(String name) => name
+      .replaceAll(RegExp(r'\(aliment moyen\)', caseSensitive: false), '')
+      .replaceAll(RegExp(r'sans pr[ée]cision', caseSensitive: false), '');
 
   final int code;
   final String name;
@@ -45,18 +52,43 @@ class CiqualFood {
   final String firstSegmentKey;
   late final Set<FoodState> states;
 
-  static Set<FoodState> _detectStates(List<String> tokens) {
+  /// Bonus de classement propre à l'aliment : favorise les fiches « aliment moyen »,
+  /// pénalise les échantillons régionaux, les formes séchées / en conserve et l'énergie absente.
+  late final double rankBonus;
+
+  double _rankBonus() {
+    final n = tokens.join(' ');
+    var b = 0.0;
+    if (name.toLowerCase().contains('aliment moyen')) b += 12;
+    if (n.contains('preleve')) b -= 25;
+    if (RegExp(r'\b(preemballe|artisanal|fait maison|bio|label rouge)').hasMatch(n)) b -= 6;
+    if (!nutrition.energyKcal.isAvailable) b -= 30;
+    if (states.contains(FoodState.canned)) b -= 40;
+    if (states.contains(FoodState.dried)) b -= 25;
+    if (states.contains(FoodState.frozen)) b -= 10;
+    if (states.contains(FoodState.raw) || states.contains(FoodState.cooked)) b += 4;
+    return b;
+  }
+
+  /// [later] : jetons après la première virgule. « Pâtes sèches » n'est pas un aliment séché,
+  /// « Pomme, sèche » l'est.
+  static Set<FoodState> _detectStates(List<String> tokens, List<String> later) {
     final s = <FoodState>{};
     for (final t in tokens) {
       if (t == 'cru' || t == 'crue' || t == 'crus') s.add(FoodState.raw);
       if (t == 'cuit' || t == 'cuite' || t.startsWith('bouilli') || t == 'vapeur' ||
           t.startsWith('grille') || t.startsWith('roti') || t.startsWith('poele') ||
-          t == 'frit' || t == 'frite') {
+          t == 'frit' || t == 'frite' || (tokens.first == 'oeuf' && (t == 'dur' || t == 'coque' || t == 'poche')) ||
+          t.startsWith('brouille')) {
         s.add(FoodState.cooked);
       }
       if (t.startsWith('surgel')) s.add(FoodState.frozen);
       if (t.startsWith('apperti') || t == 'conserve') s.add(FoodState.canned);
-      if (t.startsWith('seche') || t == 'sec' || t.startsWith('deshydrate')) s.add(FoodState.dried);
+    }
+    for (final t in later) {
+      if (t.startsWith('seche') || t == 'sec' || t.startsWith('deshydrate') || t == 'poudre') {
+        s.add(FoodState.dried);
+      }
     }
     return s;
   }

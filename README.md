@@ -15,11 +15,17 @@ Pas de quantités, pas de compte, pas de score maison. Toute donnée absente est
 
 ## Installer l'APK (sans ordinateur)
 
-Chaque push sur `main` construit l'app (GitHub Actions) et publie une pré-version :
-**Releases → build-N → caillou-N.apk**, à ouvrir sur le téléphone.
+Dernière version : **Releases → Caillou vX.Y.Z → caillou-vX.Y.Z.apk**, à ouvrir sur le téléphone
+(Android 7.0 ou plus, autoriser l'installation depuis cette source).
 
-La première fois, lancez une fois **Actions → « Mettre à jour la base Ciqual » → Run workflow** :
-la base d'aliments est alors versionnée et les builds suivants vont plus vite.
+- Publier une version : pousser un tag `vX.Y.Z` → build, tests et release GitHub automatiques.
+- Chaque push sur `main` publie aussi une pré-version de test `build-N`.
+- En cas d'échec du build, le journal est poussé dans la branche `ci-log` (lisible sans connexion).
+- La base Ciqual est versionnée (`assets/data/ciqual.json`) ; pour la régénérer :
+  **Actions → « Mettre à jour la base Ciqual » → Run workflow**.
+
+Les APK sont signés avec une clé de débogage générée à chaque build : pour passer d'une version à
+une autre, désinstallez d'abord l'ancienne (une clé de signature stable est la prochaine étape).
 
 ## Développer en local
 

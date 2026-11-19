@@ -54,7 +54,7 @@ void main() {
     });
 
     test('expansion de requête exacte uniquement (« pâté » n\'est pas « pâtes »)', () {
-      expect(FoodAliases.expansionFor('pâtes'), 'pates alimentaires');
+      expect(FoodAliases.expansionFor('pâtes'), 'pates seches');
       expect(FoodAliases.expansionFor('pâté'), isNull);
       expect(FoodAliases.expansionFor('broccoli'), 'brocoli');
       expect(FoodAliases.expansionFor('brocoli'), isNull);

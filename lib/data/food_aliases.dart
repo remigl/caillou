@@ -45,7 +45,7 @@ class FoodAliases {
     CanonicalFood('pêche', '🍑', aliases: ['peach', 'nectarine', 'brugnon']),
     CanonicalFood('abricot', '🍑', aliases: ['apricot']),
     CanonicalFood('prune', '🍑', aliases: ['plum', 'mirabelle']),
-    CanonicalFood('cerise', '🍒', aliases: ['cherry', 'cherries']),
+    CanonicalFood('cerise', '🍒', aliases: ['cherry', 'cherries'], query: 'ceriser'),
     CanonicalFood('fraise', '🍓', aliases: ['strawberry', 'strawberries']),
     CanonicalFood('framboise', '🫐', aliases: ['raspberry', 'raspberries']),
     CanonicalFood('myrtille', '🫐', aliases: ['blueberry', 'blueberries', 'bleuet']),
@@ -75,16 +75,16 @@ class FoodAliases {
     CanonicalFood('ail', '🧄', aliases: ['garlic']),
     CanonicalFood('pomme de terre', '🥔', aliases: ['potato', 'potatoes', 'patate'], prefer: _cooked),
     CanonicalFood('patate douce', '🍠', aliases: ['sweet potato'], prefer: _cooked),
-    CanonicalFood('champignon', '🍄', aliases: ['mushroom', 'champignon de paris', 'button mushroom']),
+    CanonicalFood('champignon', '🍄', aliases: ['mushroom', 'champignon de paris', 'button mushroom'], query: 'champignon de paris'),
     CanonicalFood('laitue', '🥬', aliases: ['lettuce', 'salade', 'salad greens']),
     CanonicalFood('épinard', '🥬', aliases: ['spinach']),
-    CanonicalFood('chou', '🥬', aliases: ['cabbage']),
+    CanonicalFood('chou', '🥬', aliases: ['cabbage'], query: 'chou blanc'),
     CanonicalFood('chou-fleur', '🥦', aliases: ['cauliflower', 'chou fleur']),
     CanonicalFood('chou de bruxelles', '🥬', aliases: ['brussels sprout', 'brussels sprouts']),
     CanonicalFood('haricot vert', '🫛', aliases: ['green bean', 'green beans', 'string bean']),
     CanonicalFood('petit pois', '🫛', aliases: ['pea', 'peas', 'green peas']),
     CanonicalFood('maïs', '🌽', aliases: ['corn', 'sweet corn', 'mais']),
-    CanonicalFood('radis', '🌱', aliases: ['radish']),
+    CanonicalFood('radis', '🌱', aliases: ['radish'], query: 'radis rouge'),
     CanonicalFood('betterave', '🌱', aliases: ['beet', 'beetroot']),
     CanonicalFood('poireau', '🌱', aliases: ['leek']),
     CanonicalFood('céleri', '🌱', aliases: ['celery']),
@@ -93,8 +93,8 @@ class FoodAliases {
     CanonicalFood('potiron', '🎃', aliases: ['pumpkin', 'citrouille', 'courge', 'squash', 'butternut']),
     CanonicalFood('olive', '🫒', aliases: ['olives']),
     // Féculents, légumineuses
-    CanonicalFood('riz', '🍚', aliases: ['rice', 'white rice', 'riz blanc'], prefer: _cooked),
-    CanonicalFood('pâtes', '🍝', aliases: ['pasta', 'spaghetti', 'penne', 'macaroni'], query: 'pates alimentaires', prefer: _cooked),
+    CanonicalFood('riz', '🍚', aliases: ['rice', 'white rice', 'riz blanc'], query: 'riz blanc', prefer: _cooked),
+    CanonicalFood('pâtes', '🍝', aliases: ['pasta', 'spaghetti', 'penne', 'macaroni'], query: 'pates seches', prefer: _cooked),
     CanonicalFood('pain', '🍞', aliases: ['bread', 'baguette'], prefer: PreferredState.any),
     CanonicalFood('lentille', '🫘', aliases: ['lentil', 'lentils'], prefer: _cooked),
     CanonicalFood('pois chiche', '🫘', aliases: ['chickpea', 'chickpeas'], prefer: _cooked),
@@ -102,11 +102,11 @@ class FoodAliases {
     CanonicalFood('quinoa', '🌾', aliases: ['quinoa'], prefer: _cooked),
     CanonicalFood('flocons d\'avoine', '🌾', aliases: ['oats', 'oatmeal', 'rolled oats', 'avoine'], query: 'avoine', prefer: PreferredState.any),
     // Protéines animales, produits laitiers
-    CanonicalFood('œuf', '🥚', aliases: ['egg', 'eggs', 'oeuf'], query: 'oeuf', prefer: PreferredState.any),
+    CanonicalFood('œuf', '🥚', aliases: ['egg', 'eggs', 'oeuf'], query: 'oeuf dur', prefer: _cooked),
     CanonicalFood('poulet', '🍗', aliases: ['chicken', 'chicken breast', 'chicken leg'], prefer: _cooked),
     CanonicalFood('bœuf', '🥩', aliases: ['beef', 'steak', 'boeuf'], query: 'boeuf', prefer: _cooked),
     CanonicalFood('porc', '🥓', aliases: ['pork'], prefer: _cooked),
-    CanonicalFood('jambon', '🥓', aliases: ['ham'], prefer: PreferredState.any),
+    CanonicalFood('jambon', '🥓', aliases: ['ham'], query: 'jambon cuit', prefer: PreferredState.any),
     CanonicalFood('saumon', '🐟', aliases: ['salmon'], prefer: _cooked),
     CanonicalFood('thon', '🐟', aliases: ['tuna'], prefer: PreferredState.any),
     CanonicalFood('crevette', '🦐', aliases: ['shrimp', 'prawn'], prefer: _cooked),
@@ -147,7 +147,7 @@ class FoodAliases {
     return _exact[exact] ?? _loose[phraseKey(name)];
   }
 
-  /// Requête supplémentaire pour la recherche Ciqual : "broccoli" -> "brocoli", "pâtes" -> "pates alimentaires".
+  /// Requête supplémentaire pour la recherche Ciqual : "broccoli" -> "brocoli", "pâtes" -> "pates seches".
   /// Correspondance exacte uniquement, pour ne pas transformer « pâté » en « pâtes ».
   static String? expansionFor(String query) {
     final n = normalizeText(query);
