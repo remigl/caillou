@@ -1,0 +1,7 @@
+name = "caillou-proxy"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+UPSTREAM_BASE_URL = "https://api.mistral.ai/v1"
+MODEL = "mistral-small-latest"

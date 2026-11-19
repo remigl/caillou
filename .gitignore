@@ -1,0 +1,33 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+pubspec.lock
+.metadata
+
+# Android (le dossier est généré par tool/setup_android.sh, sauf le manifeste)
+/android/*
+!/android/app/
+/android/app/*
+!/android/app/src/
+/android/app/src/*
+!/android/app/src/main/
+/android/app/src/main/*
+!/android/app/src/main/AndroidManifest.xml
+
+# Données téléchargées par tool/build_ciqual.mjs
+.ciqual-cache/
+
+# Proxy
+proxy/.wrangler/
+proxy/node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store

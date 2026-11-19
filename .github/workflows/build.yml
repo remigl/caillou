@@ -1,0 +1,86 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tests du convertisseur Ciqual
+        run: node --test tool/ciqual_lib.test.mjs
+
+      - name: Cache des XML Ciqual
+        uses: actions/cache@v4
+        with:
+          path: .ciqual-cache
+          key: ciqual-2025_11_03
+
+      - name: Base Ciqual (générée si absente du dépôt)
+        run: |
+          if [ ! -f assets/data/ciqual.json ]; then
+            node tool/build_ciqual.mjs
+          else
+            echo "assets/data/ciqual.json présent, conversion ignorée."
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Projet Android
+        run: bash tool/setup_android.sh
+
+      - run: flutter pub get
+
+      - name: Analyse statique
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Tests
+        run: flutter test
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Renommer l'APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk caillou-${{ github.run_number }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: caillou-apk
+          path: caillou-${{ github.run_number }}.apk
+
+      - name: Publier une pré-version téléchargeable
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Caillou — build ${{ github.run_number }}
+          prerelease: true
+          body: |
+            APK de test construit depuis ${{ github.sha }}.
+            Installation : télécharger le fichier .apk sur le téléphone puis l'ouvrir
+            (autoriser l'installation depuis cette source). Désinstaller la version précédente si Android refuse la mise à jour.
+          files: caillou-${{ github.run_number }}.apk

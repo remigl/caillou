@@ -1,0 +1,32 @@
+name: Mettre à jour la base Ciqual
+
+# À lancer à la main (onglet Actions > « Mettre à jour la base Ciqual » > Run workflow).
+# Télécharge la table Ciqual 2025, la convertit et versionne assets/data/ciqual.json,
+# pour que les builds suivants n'aient plus besoin de la télécharger.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tool/ciqual_lib.test.mjs
+      - run: node tool/build_ciqual.mjs
+      - name: Commit si la base a changé
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data/ciqual.json
+          if git diff --cached --quiet; then
+            echo "Aucun changement."
+          else
+            git commit -m "Données : table Ciqual 2025 (Anses, Licence Ouverte 2.0)"
+            git push
+          fi
