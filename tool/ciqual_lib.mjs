@@ -147,7 +147,7 @@ const MINERALS = ['sodium', 'calcium', 'chlorure', 'cuivre', 'fer', 'iode', 'mag
 
 export function detailGroup(label) {
   const n = normalize(label);
-  if (/^(vitamine|retinol|beta-carot|beta carot|caroten)/.test(n)) return 'Vitamines';
+  if (/^(vitamine|retinol|beta-carot|beta carot|caroten)/.test(n) || /(vitamin|folat|folique|tocopherol)/.test(n)) return 'Vitamines';
   if (MINERALS.some((m) => n === m || n.startsWith(m + ' '))) return 'Minéraux et oligo-éléments';
   if (/^(ag |acide gras|acides gras|omega|cholest)/.test(n)) return 'Lipides';
   if (/^(amidon|fructose|galactose|glucose|lactose|maltose|saccharose|polyols|fibres)/.test(n)) return 'Glucides';

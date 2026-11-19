@@ -12,12 +12,15 @@ class DetailedComposition extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final groups = <String, List<(DetailDef, NutrientValue)>>{};
-    for (final (i, value) in food.details) {
+    const order = ['Glucides', 'Lipides', 'Minéraux et oligo-éléments', 'Vitamines', 'Autres'];
+    final groups = <String, List<(DetailDef, NutrientValue)>>{for (final g in order) g: []};
+    final sorted = [...food.details]..sort((a, b) => a.$1.compareTo(b.$1));
+    for (final (i, value) in sorted) {
       if (i >= defs.length) continue;
       final def = defs[i];
       groups.putIfAbsent(def.group, () => []).add((def, value));
     }
+    groups.removeWhere((_, list) => list.isEmpty);
     if (groups.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);

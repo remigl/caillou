@@ -111,6 +111,8 @@ test('composition détaillée : unités, libellés, groupes', () => {
   assert.equal(detailGroup('Vitamine C'), 'Vitamines');
   assert.equal(detailGroup('Amidon'), 'Glucides');
   assert.equal(detailGroup('Eau'), 'Autres');
+  assert.equal(detailGroup('Alpha-tocophérol (vitamine E)'), 'Vitamines');
+  assert.equal(detailGroup('Folates intrinsèques'), 'Vitamines');
 
   const { dataset } = buildDataset({
     alim: parseRecords(ALIM_XML, 'ALIM'),
