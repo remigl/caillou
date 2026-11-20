@@ -36,7 +36,7 @@ const STOP = new Set([
   'and', 'with', 'without', 'or', 'of', 'in', 'the', 'a', 'to', 'from', 'as', 'all', 'ns', 'nfs', 'for',
   'pulp', 'peel', 'flesh', 'skin', 'edible', 'part', 'average', 'food', 'prepacked', 'salt', 'added',
   'unenriched', 'enriched', 'mature', 'seed', 'commercial', 'commercially', 'variety', 'type', 'regular', 'plain',
-  'unsalted', 'salted', 'unprepared', 'prepared', 'whole', 'fresh', 'solid', 'drained', 'liquid',
+  'unsalted', 'salted', 'unprepared', 'prepared', 'whole', 'fresh', 'solid', 'drained', 'liquid', 'meat',
   // Formules administratives USDA sans rapport avec la nature de l'aliment.
   'separable', 'only', 'trimmed', 'choice', 'select', 'prime', 'broiler', 'fryer', 'class', 'include',
   'distribution', 'program', 'usda', 'refrigerated', 'heated', 'ready', 'eat', 'kernel', 'grade',
@@ -52,6 +52,13 @@ const STATES = {
   frozen: 'frozen',
 };
 const MAIN_STATES = ['raw', 'cooked', 'dried', 'canned'];
+
+/** Parties ou formes qui changent la composition : présentes des deux côtés ou d'aucun. */
+const MUST_MATCH = new Set(['white', 'yolk', 'skin', 'liver', 'heart', 'kidney', 'tongue', 'breast', 'leg', 'wing',
+  'thigh', 'drumstick', 'bran', 'germ', 'flour', 'ground', 'juice', 'oil', 'butter', 'powder', 'sprouted', 'smoked', 'cured']);
+/** Paires incompatibles : [mots côté Ciqual], [mot côté USDA]. */
+const CONFLICTS = [[['green', 'bean'], 'mature'], [['white'], 'whole']];
+const SYNONYMS = { minced: 'ground', yoghurt: 'yogurt', sprout: 'sprouted' };
 
 function stem(w) {
   if (w.length > 4 && w.endsWith('ies')) return w.slice(0, -3) + 'y';
@@ -77,11 +84,11 @@ export function analyzeName(name) {
     for (const part of raw.split('-')) {
       if (!part) continue;
       if (STATES[part]) { states.add(STATES[part]); stateWords.add(part); continue; }
-      const s = stem(part);
+      const s = SYNONYMS[stem(part)] ?? stem(part);
       if (!STOP.has(s) && !STOP.has(part) && s.length > 1) tokens.push(s);
     }
   }
-  return { tokens, states, stateWords, head: tokens[0] ?? '' };
+  return { tokens, states, stateWords, words: new Set(words.flatMap((w) => w.split('-')).map((w) => SYNONYMS[stem(w)] ?? stem(w))), head: tokens[0] ?? '' };
 }
 
 function jaccard(a, b) {
@@ -109,6 +116,13 @@ export function matchScore(ciqualEn, usdaDesc) {
     if (cs.join() !== us.join()) return 0;
   } else if (us.includes('dried') || us.includes('canned')) {
     return 0;
+  }
+  // Sans état côté Ciqual, pas de cuisson précise côté USDA (« Tofu » ≠ « Tofu, fried »).
+  const genericWords = new Set(['raw', 'cooked']);
+  if (!cs.length && [...u.stateWords].some((w) => !genericWords.has(w))) return 0;
+  for (const p of MUST_MATCH) if (c.words.has(p) !== u.words.has(p)) return 0;
+  for (const [cw, uw] of CONFLICTS) {
+    if (cw.every((w) => c.words.has(w)) && u.words.has(uw) && !cw.every((w) => u.words.has(w))) return 0;
   }
   const C = new Set(c.tokens);
   const U = new Set(u.tokens);
