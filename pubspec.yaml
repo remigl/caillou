@@ -1,7 +1,7 @@
 name: caillou
 description: "Caillou — valeurs nutritionnelles pour 100 g : scan de code-barres, recherche d'aliments et reconnaissance par photo."
 publish_to: 'none'
-version: 0.2.0+2
+version: 0.3.0+3
 
 environment:
   sdk: ^3.5.0
@@ -13,6 +13,7 @@ dependencies:
   image_picker: ^1.1.2
   mobile_scanner: ">=6.0.0 <8.0.0"
   shared_preferences: ^2.3.0
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

@@ -31,3 +31,4 @@ proxy/node_modules/
 .vscode/
 *.iml
 .DS_Store
+.usda-cache/

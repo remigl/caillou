@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 22
       - name: Tests du convertisseur Ciqual
-        run: node --test tool/ciqual_lib.test.mjs tool/additives_lib.test.mjs
+        run: node --test tool/ciqual_lib.test.mjs tool/additives_lib.test.mjs tool/usda_lib.test.mjs
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -82,6 +82,26 @@ jobs:
             node tool/build_additives.mjs 2>&1 | tee -a ci.log || { echo "::warning::Table des additifs non générée."; exit 1; }
           fi
 
+      - name: Acides aminés USDA (générés si absents)
+        continue-on-error: true
+        run: |
+          if [ ! -f assets/data/amino.json ]; then
+            node tool/build_usda.mjs 2>&1 | tee -a ci.log || { echo "::warning::Acides aminés non générés."; exit 1; }
+          fi
+
+      - name: Échantillon RappelConso (vérification des champs)
+        continue-on-error: true
+        run: |
+          curl -sS --max-time 20 'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/rappelconso-v2-gtin-trie/records?limit=1' \
+            > rappelconso-sample.json; head -c 4000 rappelconso-sample.json | tee -a ci.log; echo
+          echo "--- recherche plein texte d'un GTIN de l'échantillon :" | tee -a ci.log
+          GTIN=$(node -e 'const r=require("./rappelconso-sample.json").results?.[0]||{};const s=JSON.stringify(r);const m=s.match(/\b\d{13}\b/);console.log(m?m[0]:"")')
+          echo "GTIN=$GTIN" | tee -a ci.log
+          if [ -n "$GTIN" ]; then
+            curl -sS --max-time 20 -G 'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/rappelconso-v2-gtin-trie/records' \
+              --data-urlencode "where=\"$GTIN\"" --data-urlencode 'limit=3' | head -c 600 | tee -a ci.log; echo
+          fi
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -136,7 +156,7 @@ jobs:
         if: always() && github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/ci-log && cp ci.log /tmp/ci-log/ci.log 2>/dev/null || echo "pas de journal" > /tmp/ci-log/ci.log
-          cp assets/data/ciqual.json assets/data/additives.json /tmp/ci-log/ 2>/dev/null || true
+          cp assets/data/ciqual.json assets/data/additives.json assets/data/amino.json rappelconso-sample.json /tmp/ci-log/ 2>/dev/null || true
           cd /tmp/ci-log
           echo "run ${{ github.run_number }} sha ${{ github.sha }} status ${{ job.status }}" > status.txt
           git init -q && git add . && git -c user.name=ci -c user.email=ci@localhost commit -qm "journal run ${{ github.run_number }}"

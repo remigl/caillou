@@ -46,6 +46,14 @@ class NutrientValue {
     return missing;
   }
 
+  /// Sérialisation compacte, même format que l'asset Ciqual : nombre, "traces", "<0.5" ou null.
+  Object? toJsonValue() => switch (kind) {
+        NutrientKind.exact => value,
+        NutrientKind.lessThan => '<$value',
+        NutrientKind.traces => 'traces',
+        NutrientKind.missing => null,
+      };
+
   /// Texte affiché, sans unité ("13,8", "< 0,5", "traces"). Null si absent.
   String? formatAmount() {
     switch (kind) {
@@ -132,6 +140,30 @@ class Nutrition {
   final NutrientValue proteins;
   final NutrientValue salt;
   final EnergySource energySource;
+
+  /// Sérialisation : [kcal, kJ, lipides, AG saturés, glucides, sucres, fibres, protéines, sel] + source d'énergie.
+  Map<String, dynamic> toJson() => {
+        'v': [for (final v in _all) v.toJsonValue()],
+        'es': energySource.name,
+      };
+
+  factory Nutrition.fromJson(Object? json) {
+    if (json is! Map || json['v'] is! List) return const Nutrition();
+    final v = json['v'] as List;
+    NutrientValue at(int i) => i < v.length ? NutrientValue.fromCiqual(v[i]) : NutrientValue.missing;
+    return Nutrition(
+      energyKcal: at(0),
+      energyKj: at(1),
+      fat: at(2),
+      saturatedFat: at(3),
+      carbohydrates: at(4),
+      sugars: at(5),
+      fiber: at(6),
+      proteins: at(7),
+      salt: at(8),
+      energySource: EnergySource.values.where((e) => e.name == json['es']).firstOrNull ?? EnergySource.direct,
+    );
+  }
 
   List<NutrientValue> get _all => [
         energyKcal,

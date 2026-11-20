@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/additives.dart';
 import '../../data/ciqual/ciqual_food.dart';
+import '../../data/ciqual/food_index.dart';
 import '../../data/cross_reference.dart';
+import '../../data/meal.dart';
+import '../../data/meal_suggestions.dart';
 import '../../data/off/off_product.dart';
 import '../../data/off/open_prices.dart';
+import '../../data/recalls.dart';
 import '../../services.dart';
 import '../food_screen.dart';
+import '../meal_screen.dart';
 import 'common.dart';
+import 'detailed_composition.dart';
 
 /// Bloc arrondi commun aux sections de la fiche produit.
 class Panel extends StatelessWidget {
@@ -181,8 +188,10 @@ class ExtraNutrientsPanel extends StatelessWidget {
               Expanded(child: Text(e.label, style: theme.textTheme.bodyMedium)),
               Text('${e.value.formatAmount()} ${e.unit}',
                   style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              PercentOfReference(value: e.value, unit: e.unit, label: e.label),
             ]),
           ),
+        const NrvLegend(),
       ]),
     );
   }
@@ -348,4 +357,183 @@ class _PricesSectionState extends State<PricesSection> {
 
   static String _date(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+}
+
+/// Alerte si le produit fait l'objet d'un rappel officiel (RappelConso, FDA).
+/// Rien n'est affiché sans rappel trouvé : l'absence d'alerte n'est pas une garantie.
+class RecallBanner extends StatefulWidget {
+  const RecallBanner({super.key, required this.barcode});
+  final String barcode;
+
+  @override
+  State<RecallBanner> createState() => _RecallBannerState();
+}
+
+class _RecallBannerState extends State<RecallBanner> {
+  Future<List<ProductRecall>>? _future;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _future ??= AppScope.of(context).recalls.forBarcode(widget.barcode);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<ProductRecall>>(
+      future: _future,
+      builder: (context, snap) {
+        final recalls = snap.data ?? const [];
+        if (recalls.isEmpty) return const SizedBox.shrink();
+        final scheme = Theme.of(context).colorScheme;
+        final theme = Theme.of(context);
+        return Column(children: [
+          for (final r in recalls)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: scheme.errorContainer, borderRadius: BorderRadius.circular(16)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Icon(Icons.warning_amber_rounded, color: scheme.onErrorContainer),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Produit rappelé', style: theme.textTheme.titleMedium?.copyWith(
+                      color: scheme.onErrorContainer, fontWeight: FontWeight.w700)),
+                  ),
+                ]),
+                const SizedBox(height: 6),
+                Text(r.title, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer)),
+                if (r.reason != null) _line(context, 'Motif', r.reason!),
+                if (r.risks != null) _line(context, 'Risques', r.risks!),
+                if (r.advice != null) _line(context, 'Que faire', r.advice!),
+                const SizedBox(height: 6),
+                Text(
+                  '${r.source}${r.date != null ? ' · ${_date(r.date!)}' : ''}. '
+                  'Vérifiez le lot et la date sur l\'emballage : tous les lots ne sont pas forcément concernés.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
+                ),
+                if (r.url != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => openLink(r.url!),
+                      child: const Text('Voir la fiche officielle'),
+                    ),
+                  ),
+              ]),
+            ),
+        ]);
+      },
+    );
+  }
+
+  Widget _line(BuildContext context, String label, String text) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text.rich(TextSpan(children: [
+        TextSpan(text: '$label : ', style: const TextStyle(fontWeight: FontWeight.w700)),
+        TextSpan(text: text),
+      ]), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer)),
+    );
+  }
+
+  static String _date(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+}
+
+/// Ouvre un lien dans le navigateur ; silencieux si impossible.
+Future<void> openLink(String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+  try {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {}
+}
+
+/// « Pour en faire un repas » : ajoute le produit au repas et propose de quoi le compléter.
+class MealIdeasCard extends StatefulWidget {
+  const MealIdeasCard({super.key, required this.product});
+  final OffProduct product;
+
+  @override
+  State<MealIdeasCard> createState() => _MealIdeasCardState();
+}
+
+class _MealIdeasCardState extends State<MealIdeasCard> {
+  Future<(FoodIndex?, CiqualFood?)>? _future;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _future ??= () async {
+      try {
+        final index = await AppScope.of(context).foods.load();
+        return (index, genericEquivalent(widget.product, index));
+      } catch (_) {
+        return (null, null);
+      }
+    }();
+  }
+
+  Future<void> _addProduct(CiqualFood? generic) async {
+    final meal = AppScope.of(context).meal;
+    final item = MealItem.fromProduct(widget.product, generic: generic);
+    if (!meal.contains(item.key)) await meal.add(item);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FutureBuilder<(FoodIndex?, CiqualFood?)>(
+      future: _future,
+      builder: (context, snap) {
+        final (index, generic) = snap.data ?? (null, null);
+        final suggestions = index == null
+            ? const <MealSuggestion>[]
+            : MealSuggester(index).suggest([MealItem.fromProduct(widget.product, generic: generic)]);
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SectionTitle('Pour en faire un repas'),
+          Panel(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              for (final s in suggestions.take(3)) ...[
+                Text(s.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final f in s.foods.take(3))
+                    ActionChip(
+                      avatar: const Icon(Icons.add, size: 18),
+                      label: Text(f.name.split(',').first),
+                      onPressed: () async {
+                        await _addProduct(generic);
+                        if (!context.mounted) return;
+                        await AppScope.of(context)
+                            .meal
+                            .add(MealItem.fromFood(f, index!.dataset.detailDefs, grams: s.grams));
+                        if (context.mounted) showAddedToMeal(context, f.name.split(',').first);
+                      },
+                    ),
+                ]),
+                const SizedBox(height: 12),
+              ],
+              FilledButton.tonalIcon(
+                onPressed: () async {
+                  await _addProduct(generic);
+                  if (!context.mounted) return;
+                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const MealScreen()));
+                },
+                icon: const Icon(Icons.restaurant_outlined),
+                label: const Text('Composer un repas avec ce produit'),
+              ),
+              const SizedBox(height: 6),
+              Text('Le produit est ajouté avec 100 g ; quantités modifiables dans le repas.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            ]),
+          ),
+        ]);
+      },
+    );
+  }
 }

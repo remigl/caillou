@@ -3,8 +3,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/additives.dart';
+import 'data/amino.dart';
 import 'data/ciqual/food_database.dart';
 import 'data/history_store.dart';
+import 'data/meal.dart';
+import 'data/recalls.dart';
 import 'data/off/off_api.dart';
 import 'data/off/off_repository.dart';
 import 'data/off/open_prices.dart';
@@ -21,6 +24,9 @@ class Services {
     required this.recognitionSettings,
     required this.additives,
     required this.prices,
+    required this.recalls,
+    required this.meal,
+    required this.amino,
   });
 
   final http.Client httpClient;
@@ -31,6 +37,9 @@ class Services {
   final RecognitionSettingsStore recognitionSettings;
   final AdditiveDatabase additives;
   final OpenPricesApi prices;
+  final RecallService recalls;
+  final MealStore meal;
+  final AminoDatabase amino;
 
   static Future<Services> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -45,6 +54,9 @@ class Services {
       recognitionSettings: RecognitionSettingsStore(prefs),
       additives: AdditiveDatabase(),
       prices: OpenPricesApi(client),
+      recalls: RecallService(client),
+      meal: MealStore(prefs),
+      amino: AminoDatabase(),
     );
   }
 }

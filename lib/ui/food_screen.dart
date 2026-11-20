@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../data/ciqual/ciqual_food.dart';
 import '../data/history_store.dart';
+import '../data/meal.dart';
 import '../services.dart';
+import 'meal_screen.dart';
 import 'widgets/common.dart';
 import 'widgets/detailed_composition.dart';
 import 'widgets/nutrition_table.dart';
@@ -57,8 +59,21 @@ class _FoodScreenState extends State<FoodScreen> {
           ],
           const SizedBox(height: 8),
           StateChips(food.states),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.tonalIcon(
+              onPressed: () async {
+                await services.meal.add(MealItem.fromFood(food, defs));
+                if (context.mounted) showAddedToMeal(context, food.name.split(',').first);
+              },
+              icon: const Icon(Icons.restaurant_outlined),
+              label: const Text('Ajouter au repas'),
+            ),
+          ),
+          const SizedBox(height: 16),
           NutritionTable(nutrition: food.nutrition),
+          CarbReference(nutrition: food.nutrition),
           if (showsPreparation) ...[
             const SizedBox(height: 12),
             Text(
@@ -69,7 +84,9 @@ class _FoodScreenState extends State<FoodScreen> {
           if (food.details.isNotEmpty && defs.isNotEmpty) ...[
             const SectionTitle('Composition détaillée'),
             DetailedComposition(food: food, defs: defs),
+            const NrvLegend(),
           ],
+          AminoSection(ciqualCode: food.code),
           if (variants.isNotEmpty) ...[
             const SectionTitle('Autres préparations'),
             Card(

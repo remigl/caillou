@@ -134,6 +134,7 @@ class _ProductView extends StatelessWidget {
             child: Text('Hors ligne : données enregistrées le ${_date(result.fetchedAt)}.',
                 style: theme.textTheme.bodySmall),
           ),
+        RecallBanner(barcode: p.barcode),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -181,11 +182,13 @@ class _ProductView extends StatelessWidget {
           )
         else
           NutritionTable(nutrition: p.nutrition, basis: p.isLiquid ? 'Pour 100 ml' : 'Pour 100 g'),
+        if (!p.nutritionNotProvided && !p.nutrition.isEmpty) CarbReference(nutrition: p.nutrition, liquid: p.isLiquid),
         NutrientLevels(levels: p.nutrientLevels),
         if (p.extraNutrients.isNotEmpty) ...[
           const SectionTitle('Autres nutriments déclarés'),
           ExtraNutrientsPanel(extras: p.extraNutrients),
         ],
+        MealIdeasCard(product: p),
         GenericEquivalentCard(product: p),
         const SectionTitle('Ingrédients'),
         Padding(

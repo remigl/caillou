@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 
 import '../data/ciqual/food_index.dart';
 import '../data/history_store.dart';
+import '../data/meal.dart';
 import '../recognition/food_matcher.dart';
 import '../recognition/food_recognizer.dart';
 import '../recognition/remote_vision_recognizer.dart';
 import '../services.dart';
 import 'food_picker_sheet.dart';
 import 'food_screen.dart';
+import 'meal_screen.dart';
 import 'settings_screen.dart';
 import 'widgets/common.dart';
 
@@ -224,6 +226,15 @@ class _PhotoScreenState extends State<PhotoScreen> {
           for (final item in review)
             _ItemCard(item: item, onCorrect: _correct, onRemove: _remove, onOpen: _open, onConfirm: _confirm),
         ],
+        if (items.any((i) => i.match != null) && _index != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: FilledButton.tonalIcon(
+              onPressed: () => _addAllToMeal(items),
+              icon: const Icon(Icons.restaurant_outlined),
+              label: const Text('Tout ajouter au repas (100 g chacun)'),
+            ),
+          ),
         if (items.isNotEmpty && _index != null)
           Align(
             alignment: Alignment.centerLeft,
@@ -241,6 +252,24 @@ class _PhotoScreenState extends State<PhotoScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _addAllToMeal(List<RecognizedItem> items) async {
+    final services = AppScope.of(context);
+    final defs = _index?.dataset.detailDefs ?? const [];
+    var added = 0;
+    for (final i in items) {
+      final food = i.match;
+      if (food == null || services.meal.contains('ciqual:${food.code}')) continue;
+      await services.meal.add(MealItem.fromFood(food, defs));
+      added++;
+    }
+    if (!mounted) return;
+    if (added == 0) {
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const MealScreen()));
+    } else {
+      showAddedToMeal(context, '$added aliment${added > 1 ? 's' : ''}');
+    }
   }
 
   void _open(RecognizedItem item) {

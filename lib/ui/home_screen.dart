@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/history_store.dart';
+import '../data/meal.dart';
 import '../services.dart';
 import 'food_screen.dart';
+import 'meal_screen.dart';
 import 'photo_screen.dart';
 import 'product_screen.dart';
 import 'scanner_screen.dart';
@@ -112,6 +114,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text('Caillou', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
                   const Spacer(),
                   IconButton(
+                    tooltip: 'Mon repas',
+                    icon: const Icon(Icons.restaurant_outlined),
+                    onPressed: () => _go(const MealScreen()),
+                  ),
+                  IconButton(
                     tooltip: 'Réglages',
                     icon: const Icon(Icons.tune),
                     onPressed: () => _go(const SettingsScreen()),
@@ -204,6 +211,27 @@ class _HomeContent extends StatelessWidget {
             icon: const Icon(Icons.photo_library_outlined, size: 18),
             label: const Text('Choisir une photo'),
           ),
+        ),
+        ValueListenableBuilder<List<MealItem>>(
+          valueListenable: services.meal,
+          builder: (context, items, _) {
+            if (items.isEmpty) return const SizedBox.shrink();
+            final t = MealTotals(items);
+            return Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Card(
+                margin: EdgeInsets.zero,
+                child: ListTile(
+                  leading: Icon(Icons.restaurant_outlined, color: theme.colorScheme.primary),
+                  title: const Text('Mon repas'),
+                  subtitle: Text('${items.length} élément${items.length > 1 ? 's' : ''} · '
+                      '${t.value('kcal').round()} kcal · ${t.grams.round()} g'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const MealScreen())),
+                ),
+              ),
+            );
+          },
         ),
         if (history.isNotEmpty) ...[
           const SectionTitle('Récemment consultés'),

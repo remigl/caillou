@@ -37,6 +37,11 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- url_launcher : ouverture des fiches de rappel et des sources. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
         <!-- image_picker : ouverture de l'appareil photo. -->
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
