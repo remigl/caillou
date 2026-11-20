@@ -18,7 +18,12 @@ test('correspondances : même aliment, même état', () => {
   assert.ok(matchScore('Broccoli, raw', 'Broccoli, raw') > 1);
   assert.equal(matchScore('Broccoli, raw', 'Broccoli, cooked, boiled, drained, without salt'), 0); // cru ≠ cuit
   assert.equal(matchScore('Apple, raw', 'Pineapple, raw'), 0); // nom principal différent
-  assert.ok(matchScore('Egg, hard-boiled', 'Egg, whole, cooked, hard-boiled') >= 0.6);
+  assert.ok(matchScore('Egg, hard-boiled', 'Egg, whole, cooked, hard-boiled') > matchScore('Egg, hard-boiled', 'Egg, whole, cooked, fried'));
+  // Cas réels refusés : état différent, plat composé, transformation.
+  assert.equal(matchScore('Lentil, green, dried', 'Lentils, mature seeds, cooked, boiled, with salt'), 0);
+  assert.equal(matchScore('Kidney bean, canned, drained', 'Beans, kidney, red, mature seeds, raw'), 0);
+  assert.equal(matchScore('Chicken tajine, prepacked', 'Chicken, skin (drumsticks and thighs), raw'), 0);
+  assert.equal(matchScore('Couscous with fish', 'Couscous, cooked'), 0);
 });
 
 test('construction du jeu de données', () => {

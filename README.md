@@ -12,7 +12,11 @@ faible-modéré-élevé, score environnemental et CO₂ (Agribalyse), origine, p
 vitamines et minéraux, et pour chaque produit l'aliment générique Ciqual comparable avec sa composition
 détaillée.
 
-Pas de quantités, pas de compte, pas de score maison. Toute donnée absente est affichée
+Également : alerte si le produit scanné fait l'objet d'un rappel officiel (RappelConso, FDA), % des apports
+de référence UE et des VNR, repère « 10 g de glucides », acides aminés (USDA), et **composition de repas** avec
+quantités, totaux et suggestions pour le compléter.
+
+Pas de compte, pas de score maison, pas d'estimation de quantités sur les photos. Toute donnée absente est affichée
 « Non disponible ».
 
 - Architecture, choix et risques : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)

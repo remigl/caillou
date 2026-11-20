@@ -47,10 +47,12 @@ class RecallService {
 
   Future<List<ProductRecall>> _rappelConso(String barcode) async {
     try {
-      // Recherche plein texte sur le code (sans dépendre du nom exact du champ GTIN),
-      // puis vérification que l'enregistrement contient bien ce code.
+      // Champ « gtin » numérique (zéros de tête absents) ; chaque fiche est revérifiée au parsing.
+      final gtin = barcode.replaceFirst(RegExp(r'^0+'), '');
+      if (gtin.isEmpty) return const [];
       final uri = Uri.parse(rappelConsoBase).replace(queryParameters: {
-        'where': '"$barcode"',
+        'where': 'gtin=$gtin',
+        'order_by': 'date_publication desc',
         'limit': '10',
       });
       final res = await _client.get(uri, headers: {'User-Agent': AppConfig.userAgent}).timeout(const Duration(seconds: 10));
@@ -106,18 +108,19 @@ List<ProductRecall> parseRappelConso(Object? json, String barcode) {
   final seen = <String>{};
   for (final r in results) {
     if (r is! Map) continue;
-    // Garde-fou : le code doit apparaître dans l'enregistrement (évite les faux positifs du plein texte).
-    if (!jsonEncode(r).contains(barcode)) continue;
+    // Garde-fou : le code (sans zéros de tête) doit apparaître dans la fiche.
+    if (!jsonEncode(r).contains(barcode.replaceFirst(RegExp(r'^0+'), ''))) continue;
     final id = _first(r, ['id', 'numero_fiche', 'reference_fiche', 'rappel_guid']) ?? '${out.length}';
     if (!seen.add(id)) continue;
     final name = _first(r, ['libelle', 'noms_des_modeles_ou_references', 'modeles_ou_references', 'nom_du_produit']);
     final brand = _first(r, ['marque_produit', 'nom_de_la_marque_du_produit', 'marque']);
     out.add(ProductRecall(
       source: 'RappelConso (France)',
-      title: [if (name != null) name, if (brand != null && !(name ?? '').contains(brand)) brand].join(' — ').ifEmpty('Produit rappelé'),
-      reason: _first(r, ['motif_rappel', 'motif_du_rappel']),
-      risks: _first(r, ['risques_encourus', 'risques_encourus_par_le_consommateur']),
-      advice: _first(r, ['conduites_a_tenir_par_le_consommateur', 'preconisations_sanitaires']),
+      title: _tidy([if (name != null) name, if (brand != null && !(name ?? '').contains(brand)) brand].join(' — '))
+          .ifEmpty('Produit rappelé'),
+      reason: _tidyOrNull(_first(r, ['motif_rappel', 'motif_du_rappel'])),
+      risks: _tidyOrNull(_first(r, ['risques_encourus', 'risques_encourus_par_le_consommateur'])),
+      advice: _tidyOrNull(_first(r, ['conduites_a_tenir_par_le_consommateur', 'preconisations_sanitaires'])),
       date: DateTime.tryParse(_first(r, ['date_publication', 'date_de_publication']) ?? ''),
       url: _first(r, ['lien_vers_la_fiche_rappel', 'lien_vers_la_fiche']),
     ));
@@ -147,6 +150,14 @@ List<ProductRecall> parseOpenFda(Object? json, String upc) {
   }
   return out;
 }
+
+/// "ne plus consommer|rapporter le produit" -> "Ne plus consommer, rapporter le produit".
+String _tidy(String s) {
+  final t = s.replaceAll('|', ', ').replaceAll('¤', ' / ').trim();
+  return t.isEmpty ? t : t[0].toUpperCase() + t.substring(1);
+}
+
+String? _tidyOrNull(String? s) => s == null ? null : _tidy(s);
 
 extension on String {
   String ifEmpty(String other) => isEmpty ? other : this;

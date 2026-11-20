@@ -121,7 +121,8 @@ void main() {
             'libelle': 'Pâte à tartiner',
             'marque_produit': 'Marque X',
             'gtin': 3017620422003,
-            'motif_rappel': 'Présence de salmonelles',
+            'motif_rappel': 'présence de salmonelles',
+            'conduites_a_tenir_par_le_consommateur': 'ne plus consommer|rapporter le produit au point de vente',
             'risques_encourus': 'Salmonellose',
             'date_publication': '2026-03-02',
             'lien_vers_la_fiche_rappel': 'https://rappel.conso.gouv.fr/fiche-rappel/1',
@@ -132,6 +133,7 @@ void main() {
       expect(r, hasLength(1));
       expect(r.single.title, 'Pâte à tartiner — Marque X');
       expect(r.single.reason, 'Présence de salmonelles');
+      expect(r.single.advice, 'Ne plus consommer, rapporter le produit au point de vente');
       expect(r.single.date, DateTime(2026, 3, 2));
     });
 

@@ -63,6 +63,36 @@ La composition détaillée Ciqual (vitamines, minéraux, oligo-éléments, acide
 est extraite pour chaque aliment : tous les constituants publiés par l'Anses, sauf ceux déjà dans le tableau
 principal. Seules les valeurs renseignées sont affichées.
 
+## Rappels de produits
+
+- **RappelConso** (DGCCRF / DGAL, data.economie.gouv.fr, jeu « RappelConso V2 — produits triés par GTIN »),
+  Licence Ouverte. Requête `where=gtin=<code>` au moment du scan ; chaque fiche est revérifiée.
+- **openFDA food enforcement** (FDA, domaine public CC0) pour les codes UPC nord-américains (préfixes GS1 000-139).
+- Une alerte n'est affichée que si un rappel est trouvé ; son absence n'est pas une garantie (tous les lots
+  ne sont pas concernés, et la recherche peut échouer hors ligne).
+
+## Valeurs de référence
+
+Règlement (UE) n° 1169/2011, annexe XIII : apports de référence (énergie et macronutriments, adulte-type
+8400 kJ / 2000 kcal) et valeurs nutritionnelles de référence (VNR) des vitamines et minéraux. Le seuil de
+15 % de la VNR pour 100 g (« quantité significative ») sert à mettre en gras. Repère « 10 g de glucides » :
+simple calcul à partir de la teneur en glucides.
+
+## Acides aminés — USDA FoodData Central, SR Legacy
+
+- Domaine public (CC0 1.0), source citée comme demandé par l'USDA. Archive ASCII officielle (data.gov).
+- Rapprochement automatique d'un aliment Ciqual avec un aliment USDA par le nom anglais, volontairement strict :
+  même nom principal, même état (cru, cuit, sec, conserve), noms qui se recouvrent largement. Les plats
+  composés et les aliments à moins de 2 g de protéines ne sont pas rapprochés.
+- L'aliment USDA retenu est affiché : ce sont les valeurs d'un aliment comparable, pas celles de l'aliment Ciqual.
+
+## Données non utilisées
+
+- **60 Millions de consommateurs, Que Choisir** (et Which?, Consumer Reports, Stiftung Warentest…) : résultats
+  de tests protégés, dont l'exploitation est interdite sans autorisation. Non repris.
+- **Index glycémique** : la base internationale de référence (Université de Sydney) est sous « tous droits
+  réservés ». Non reprise ; l'app affiche les glucides, sucres, fibres et le repère « 10 g de glucides ».
+
 ## Reconnaissance d'image
 
 - Pas une source de données nutritionnelles : elle ne fait que **nommer** les aliments ;

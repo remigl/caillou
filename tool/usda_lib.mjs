@@ -33,19 +33,25 @@ export function parseSrFile(text) {
 }
 
 const STOP = new Set([
-  'and', 'with', 'without', 'or', 'of', 'in', 'the', 'a', 'to', 'from', 'as', 'all', 'ns', 'nfs',
+  'and', 'with', 'without', 'or', 'of', 'in', 'the', 'a', 'to', 'from', 'as', 'all', 'ns', 'nfs', 'for',
   'pulp', 'peel', 'flesh', 'skin', 'edible', 'part', 'average', 'food', 'prepacked', 'salt', 'added',
-  'unenriched', 'enriched', 'mature', 'seed', 'commercial', 'variety', 'type', 'regular', 'plain',
-  'unsalted', 'salted', 'unprepared', 'prepared', 'whole', 'fresh', 'solid', 'drained', 'canned',
+  'unenriched', 'enriched', 'mature', 'seed', 'commercial', 'commercially', 'variety', 'type', 'regular', 'plain',
+  'unsalted', 'salted', 'unprepared', 'prepared', 'whole', 'fresh', 'solid', 'drained', 'liquid',
+  // Formules administratives USDA sans rapport avec la nature de l'aliment.
+  'separable', 'only', 'trimmed', 'choice', 'select', 'prime', 'broiler', 'fryer', 'class', 'include',
+  'distribution', 'program', 'usda', 'refrigerated', 'heated', 'ready', 'eat', 'kernel', 'grade',
 ]);
 const STATES = {
   raw: 'raw',
   cooked: 'cooked', boiled: 'cooked', baked: 'cooked', roasted: 'cooked', grilled: 'cooked', broiled: 'cooked',
   fried: 'cooked', steamed: 'cooked', stewed: 'cooked', braised: 'cooked', poached: 'cooked', microwaved: 'cooked',
-  'hard-boiled': 'cooked', hardboiled: 'cooked',
-  dried: 'dried', dehydrated: 'dried', powder: 'dried',
+  simmered: 'cooked', scrambled: 'cooked', toasted: 'cooked', 'hard-boiled': 'cooked', hardboiled: 'cooked',
+  'pan-fried': 'cooked',
+  dried: 'dried', dry: 'dried', dehydrated: 'dried', powder: 'dried',
+  canned: 'canned', tinned: 'canned',
   frozen: 'frozen',
 };
+const MAIN_STATES = ['raw', 'cooked', 'dried', 'canned'];
 
 function stem(w) {
   if (w.length > 4 && w.endsWith('ies')) return w.slice(0, -3) + 'y';
@@ -65,16 +71,17 @@ export function analyzeName(name) {
     .filter(Boolean);
   const tokens = [];
   const states = new Set();
+  const stateWords = new Set();
   for (const raw of words) {
-    if (STATES[raw]) { states.add(STATES[raw]); continue; }
+    if (STATES[raw]) { states.add(STATES[raw]); stateWords.add(raw); continue; }
     for (const part of raw.split('-')) {
       if (!part) continue;
-      if (STATES[part]) { states.add(STATES[part]); continue; }
+      if (STATES[part]) { states.add(STATES[part]); stateWords.add(part); continue; }
       const s = stem(part);
       if (!STOP.has(s) && !STOP.has(part) && s.length > 1) tokens.push(s);
     }
   }
-  return { tokens, states, head: tokens[0] ?? '' };
+  return { tokens, states, stateWords, head: tokens[0] ?? '' };
 }
 
 function jaccard(a, b) {
@@ -85,22 +92,37 @@ function jaccard(a, b) {
   return inter / (A.size + B.size - inter || 1);
 }
 
-/** Score de correspondance (0..1) ou 0 si incompatible. */
+/**
+ * Score de correspondance, 0 si incompatible. Volontairement strict : mieux vaut aucune valeur
+ * qu'un aliment différent (cru/cuit, sec/cuit, plat composé...).
+ */
 export function matchScore(ciqualEn, usdaDesc) {
   const c = analyzeName(ciqualEn);
   const u = analyzeName(usdaDesc);
   if (!c.tokens.length || !u.tokens.length) return 0;
   // Le nom principal USDA (premier mot) doit figurer dans le nom Ciqual.
   if (!c.tokens.includes(u.head)) return 0;
-  // États incompatibles (cru vs cuit, frais vs séché) : refus.
-  for (const s of ['raw', 'cooked', 'dried']) {
-    const other = s === 'raw' ? ['cooked', 'dried'] : s === 'cooked' ? ['raw'] : ['raw'];
-    if (c.states.has(s) && other.some((o) => u.states.has(o)) && !u.states.has(s)) return 0;
+  // Même état principal (cru, cuit, sec, conserve) ; sans état côté Ciqual, pas de sec ni de conserve côté USDA.
+  const cs = MAIN_STATES.filter((s) => c.states.has(s));
+  const us = MAIN_STATES.filter((s) => u.states.has(s));
+  if (cs.length) {
+    if (cs.join() !== us.join()) return 0;
+  } else if (us.includes('dried') || us.includes('canned')) {
+    return 0;
   }
-  let score = jaccard(c.tokens, u.tokens);
+  const C = new Set(c.tokens);
+  const U = new Set(u.tokens);
+  let inter = 0;
+  for (const x of C) if (U.has(x)) inter++;
+  const covC = inter / C.size; // part du nom Ciqual expliquée
+  const covU = inter / U.size; // part du nom USDA expliquée
+  // Règle souple (USDA plus générique, un seul qualificatif Ciqual en plus) seulement si l'état est précisé
+  // des deux côtés : « Lentil, green, cooked » ~ « Lentils, cooked », mais pas « Couscous with fish » ~ « Couscous ».
+  const accepted = (cs.length > 0 && covU === 1 && covC >= 0.5) || (covC >= 0.75 && covU >= 0.6);
+  if (!accepted) return 0;
+  let score = (covC + covU) / 2;
   if (c.head === u.head) score += 0.15;
-  const sameState = [...c.states].some((s) => u.states.has(s));
-  if (sameState) score += 0.1;
+  for (const w of c.stateWords) if (u.stateWords.has(w)) score += 0.2; // « hard-boiled » = « hard-boiled »
   return score;
 }
 
@@ -108,7 +130,7 @@ export function matchScore(ciqualEn, usdaDesc) {
  * Construit le jeu de données. foods: [{ndb, desc}], nutrients: [{ndb, nutr, val}], defs: [{nutr, desc}],
  * ciqual: [{c, e, protein}]. Retourne { dataset, stats }.
  */
-export function buildAmino({ foods, nutrients, defs, ciqual, minScore = 0.6, minProtein = 2 }) {
+export function buildAmino({ foods, nutrients, defs, ciqual, minScore = 0.7, minProtein = 2 }) {
   const aminoIndex = new Map();
   AMINO_ACIDS.forEach(([usdaName], i) => {
     const d = defs.find((x) => x.desc.toLowerCase() === usdaName.toLowerCase());
