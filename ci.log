@@ -1,0 +1,123 @@
+assets/data/ciqual.json à jour (format 2).
+{"total_count": 19045, "results": [{"gtin": 3378740101774, "numero_fiche": "2024-01-0218", "numero_version": 1, "nature_juridique_rappel": "volontaire (sans arr\u00eat\u00e9 pr\u00e9fectoral)", "categorie_produit": "alimentation", "sous_categorie_produit": "viandes", "marque_produit": "neutre / legaulois pro", "modeles_ou_references": "bq 18 broc.dde nat.120-140sat c.lgp\u00a4bq 18 broc dde nat 120-140g s/at nc", "identification_produits": "3378740101774$9774000016$date limite de consommation$2024-01-30$|3285320000672$9774000016$date limite de consommation$2024-01-30$", "conditionnements": "produit vendu en vrac au rayon boucherie", "date_debut_commercialisation": "2024-01-19", "date_date_fin_commercialisation": "2024-01-22", "temperature_conservation": "produit \u00e0 conserver au r\u00e9frig\u00e9rateur", "marque_salubrite": "fr 69.135.001 ce", "informations_complementaires": null, "zone_geographique_de_vente": "france enti\u00e8re", "distributeurs": "voir pj", "motif_rappel": "pr\u00e9sence de salmonelle dans une mati\u00e8re premi\u00e8re", "risques_encourus": "salmonella spp (agent responsable de la salmonellose)", "preconisations_sanitaires": "les toxi-infections alimentaires caus\u00e9es par les salmonelles se traduisent par des troubles gastro-intestinaux (diarrh\u00e9e, vomissements) d'apparition brutale souvent accompagn\u00e9s de fi\u00e8vre et de maux de t\u00eate qui surviennent g\u00e9n\u00e9ralement 6h \u00e0 72h apr\u00e8s la consommation des produits contamin\u00e9s.  ces sympt\u00f4mes peuvent \u00eatre plus prononc\u00e9s chez les jeunes enfants, les femmes enceintes, les sujets immunod\u00e9prim\u00e9s et les personnes \u00e2g\u00e9es. les personnes qui auraient consomm\u00e9 ces produits et qui pr\u00e9senteraient ces sympt\u00f4mes sont invit\u00e9es \u00e0 consulter leur m\u00e9decin traitant en lui signalant cette consommation. en l'absence de sympt\u00f4mes dans les 7 jours apr\u00e8s la consommation des produits concern\u00e9s, il est inutile de s'inqui\u00e9ter et de consulter un m\u00e9decin. si le produit doit subir une cuisson avant consommation\u00a0: la cuisson \u00e0 c\u0153ur des produits (\u0153ufs durs, p\u00e2tisseries, viandes de volailles\u2026) \u00e0 +65\u00b0c permet de d\u00e9truire ces bact\u00e9ries et de pr\u00e9venir les cons\u00e9quences d'une telle contamination.", "description_complementaire_risque": null, "conduites_a_tenir_par_le_consommateur": "ne plus consommer|rapporter le produit au point de vente", "numero_contact": null, "modalites_de_compensation": "remboursement", "date_de_fin_de_la_procedure_de_rappel": "2024-02-13", "informations_complementaires_publiques": null, "liens_vers_les_images": "https://rappel.conso.gouv.fr/image/8d359ec8-b6cf-4900-ac12-cc5bcfa67e3d.jpg|https://rappel.conso.gouv.fr/image/b55b50f1-454c-49b8-8f34-4d8e306ea253.jpg", "lien_vers_la_liste_des_produits": null, "lien_vers_la_liste_des_distributeurs": "https://rappel.conso.gouv.fr/document/fd5c9183-9ab7-4641-9ba6-ede6ee29c9cf/interne/listedesdistributeurs", "lien_vers_affichette_pdf": "https://rappel.conso.gouv.fr/affichettepdf/13626/interne", "lien_vers_la_fiche_rappel": "https://rappel.conso.gouv.fr/fiche-rappel/13626/interne", "rappel_guid": "8c77dc74-efe3-4ffd-9e07-ec740726e81e", "date_publication": "2024-01-25T16:13:14+00:00", "libelle": "brochette de dinde pur viande", "id": 13626}]}--- recherche plein texte d'un GTIN de l'échantillon :
+GTIN=3378740101774
+{"total_count": 2, "results": [{"gtin": 3378740101774, "numero_fiche": "2024-01-0218", "numero_version": 1, "nature_juridique_rappel": "volontaire (sans arr\u00eat\u00e9 pr\u00e9fectoral)", "categorie_produit": "alimentation", "sous_categorie_produit": "viandes", "marque_produit": "neutre / legaulois pro", "modeles_ou_references": "bq 18 broc.dde nat.120-140sat c.lgp\u00a4bq 18 broc dde nat 120-140g s/at nc", "identification_produits": "3378740101774$9774000016$date limite de consommation$2024-01-30$|3285320000672$9774000016$date limite de consommation$2024-01-30$", "conditionnements": "produiFlutter 3.50.1 • channel stable • https://github.com/flutter/flutter.git
+Framework • revision ae9b586f34 (32 hours ago) • 2026-11-18 17:01:07 -0800
+Engine • hash 51379e6df48ea8ee7205623b90fe66491cad8df3 (revision 4d35714800) (2 days ago) • 2026-11-18 01:50:07.000Z
+Tools • Dart 3.14.0 • DevTools 2.61.0
+Projet Android prêt (android/).
+Resolving dependencies...
+Downloading packages...
+  cross_file 0.3.5+5 (0.4.0 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  lints 5.1.1 (6.1.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  test_api 0.7.14 (0.7.15 available)
+  vector_math 2.4.3 (2.4.4 available)
+Got dependencies!
+6 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Running Gradle task 'assembleRelease'...                        
+Loading package information...                                                  
+Loading local repository...                                                     
+[                                       ] 3% Loading local repository...        
+[                                       ] 3% Fetch remote repository...         
+[=                                      ] 3% Fetch remote repository...         
+[=                                      ] 4% Fetch remote repository...         
+[=                                      ] 5% Fetch remote repository...         
+[==                                     ] 5% Fetch remote repository...         
+[==                                     ] 6% Fetch remote repository...         
+[==                                     ] 7% Fetch remote repository...         
+[==                                     ] 7% Computing updates...               
+[===                                    ] 8% Computing updates...               
+[===                                    ] 10% Computing updates...              
+[===                                    ] 10% Installing NDK (Side by side) 28.2
+[===                                    ] 10% Downloading android-ndk-r28c-linux
+[====                                   ] 10% Downloading android-ndk-r28c-linux
+[====                                   ] 11% Downloading android-ndk-r28c-linux
+[====                                   ] 12% Downloading android-ndk-r28c-linux
+[=====                                  ] 13% Downloading android-ndk-r28c-linux
+[=====                                  ] 14% Downloading android-ndk-r28c-linux
+[=====                                  ] 15% Downloading android-ndk-r28c-linux
+[======                                 ] 15% Downloading android-ndk-r28c-linux
+[======                                 ] 16% Downloading android-ndk-r28c-linux
+[======                                 ] 17% Downloading android-ndk-r28c-linux
+[=======                                ] 18% Downloading android-ndk-r28c-linux
+[=======                                ] 19% Downloading android-ndk-r28c-linux
+[=======                                ] 20% Downloading android-ndk-r28c-linux
+[========                               ] 20% Downloading android-ndk-r28c-linux
+[========                               ] 21% Downloading android-ndk-r28c-linux
+[========                               ] 22% Downloading android-ndk-r28c-linux
+[=========                              ] 23% Downloading android-ndk-r28c-linux
+[=========                              ] 24% Downloading android-ndk-r28c-linux
+[=========                              ] 25% Downloading android-ndk-r28c-linux
+[==========                             ] 25% Downloading android-ndk-r28c-linux
+[==========                             ] 26% Downloading android-ndk-r28c-linux
+[==========                             ] 27% Downloading android-ndk-r28c-linux
+[===========                            ] 28% Downloading android-ndk-r28c-linux
+[===========                            ] 29% Downloading android-ndk-r28c-linux
+[===========                            ] 30% Downloading android-ndk-r28c-linux
+[============                           ] 30% Downloading android-ndk-r28c-linux
+[============                           ] 31% Downloading android-ndk-r28c-linux
+[============                           ] 32% Downloading android-ndk-r28c-linux
+[============                           ] 33% Downloading android-ndk-r28c-linux
+[============                           ] 33% Unzipping...                      
+[============                           ] 33% Unzipping... android-ndk-r28c/    
+[============                           ] 33% Unzipping... android-ndk-r28c/READ
+[=============                          ] 33% Unzipping... android-ndk-r28c/READ
+[=============                          ] 33% Unzipping... android-ndk-r28c/meta
+[=============                          ] 33% Unzipping... android-ndk-r28c/shad
+[=============                          ] 33% Unzipping... android-ndk-r28c/ndk-
+[=============                          ] 33% Unzipping... android-ndk-r28c/wrap
+[=============                          ] 33% Unzipping... android-ndk-r28c/ndk-
+[=============                          ] 33% Unzipping... android-ndk-r28c/tool
+[=============                          ] 34% Unzipping... android-ndk-r28c/tool
+[=============                          ] 35% Unzipping... android-ndk-r28c/tool
+[==============                         ] 35% Unzipping... android-ndk-r28c/tool
+[==============                         ] 36% Unzipping... android-ndk-r28c/tool
+[==============                         ] 37% Unzipping... android-ndk-r28c/tool
+[===============                        ] 38% Unzipping... android-ndk-r28c/tool
+[===============                        ] 39% Unzipping... android-ndk-r28c/tool
+[===============                        ] 40% Unzipping... android-ndk-r28c/tool
+[================                       ] 40% Unzipping... android-ndk-r28c/tool
+[================                       ] 41% Unzipping... android-ndk-r28c/tool
+[================                       ] 42% Unzipping... android-ndk-r28c/tool
+[=================                      ] 43% Unzipping... android-ndk-r28c/tool
+[=================                      ] 44% Unzipping... android-ndk-r28c/tool
+[=================                      ] 45% Unzipping... android-ndk-r28c/tool
+[==================                     ] 45% Unzipping... android-ndk-r28c/tool
+[==================                     ] 46% Unzipping... android-ndk-r28c/tool
+[==================                     ] 47% Unzipping... android-ndk-r28c/tool
+[===================                    ] 48% Unzipping... android-ndk-r28c/tool
+[===================                    ] 49% Unzipping... android-ndk-r28c/tool
+[===================                    ] 50% Unzipping... android-ndk-r28c/tool
+[====================                   ] 50% Unzipping... android-ndk-r28c/tool
+[====================                   ] 51% Unzipping... android-ndk-r28c/tool
+[====================                   ] 52% Unzipping... android-ndk-r28c/tool
+[=====================                  ] 53% Unzipping... android-ndk-r28c/tool
+[=====================                  ] 54% Unzipping... android-ndk-r28c/tool
+[=====================                  ] 54% Unzipping... android-ndk-r28c/buil
+[=====================                  ] 54% Unzipping... android-ndk-r28c/sour
+[=====================                  ] 54% Unzipping... android-ndk-r28c/NOTI
+[=====================                  ] 54% Unzipping... android-ndk-r28c/ndk-
+[=====================                  ] 54% Unzipping... android-ndk-r28c/NOTI
+[=====================                  ] 54% Unzipping... android-ndk-r28c/pyth
+[=====================                  ] 54% Unzipping... android-ndk-r28c/preb
+[=====================                  ] 54% Unzipping... android-ndk-r28c/ndk-
+[=====================                  ] 54% Unzipping... android-ndk-r28c/sour
+[=====================                  ] 54% Unzipping... android-ndk-r28c/simp
+[=====================                  ] 55% Unzipping... android-ndk-r28c/simp
+[=====================                  ] 55% Unzipping... android-ndk-r28c/CHAN
+[=======================================] 100% Unzipping... android-ndk-r28c/CHA
+
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 5392 bytes (99.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Caught exception: Already watching path: /opt/hostedtoolcache/flutter/stable-3.50.1-x64/flutter/packages/flutter_tools/gradle
+Checking the license for package CMake 3.22.1 in /usr/local/lib/android/sdk/licenses
+License for package CMake 3.22.1 accepted.
+Preparing "Install CMake 3.22.1 v.3.22.1".
+"Install CMake 3.22.1 v.3.22.1" ready.
+Installing CMake 3.22.1 in /usr/local/lib/android/sdk/cmake/3.22.1
+"Install CMake 3.22.1 v.3.22.1" complete.
+"Install CMake 3.22.1 v.3.22.1" finished.
+Running Gradle task 'assembleRelease'...                          306.3s
+✓ Built build/app/outputs/flutter-apk/app-release.apk (69.3MB)
