@@ -57,7 +57,7 @@ const MAIN_STATES = ['raw', 'cooked', 'dried', 'canned'];
 const MUST_MATCH = new Set(['white', 'yolk', 'skin', 'liver', 'heart', 'kidney', 'tongue', 'breast', 'leg', 'wing',
   'thigh', 'drumstick', 'bran', 'germ', 'flour', 'ground', 'juice', 'oil', 'butter', 'powder', 'sprouted', 'smoked', 'cured']);
 /** Paires incompatibles : [mots côté Ciqual], [mot côté USDA]. */
-const CONFLICTS = [[['green', 'bean'], 'mature'], [['white'], 'whole']];
+const CONFLICTS = [[['green', 'bean'], 'mature'], [['french', 'bean'], 'mature'], [['green', 'pea'], 'mature'], [['white'], 'whole']];
 const SYNONYMS = { minced: 'ground', yoghurt: 'yogurt', sprout: 'sprouted' };
 
 function stem(w) {
@@ -137,11 +137,11 @@ export function matchScore(ciqualEn, usdaDesc) {
   let score = (covC + covU) / 2;
   if (c.head === u.head) score += 0.15;
   for (const w of c.stateWords) if (u.stateWords.has(w)) score += 0.2; // « hard-boiled » = « hard-boiled »
-  // Modes de cuisson précisés des deux côtés mais différents (grillé ≠ bouilli) : pénalité.
+  // Modes de cuisson précisés des deux côtés mais différents (grillé ≠ bouilli) : refus.
   const generic = new Set(['raw', 'cooked']);
   const cw = [...c.stateWords].filter((w) => !generic.has(w));
   const uw = [...u.stateWords].filter((w) => !generic.has(w));
-  if (cw.length && uw.length && !cw.some((w) => uw.includes(w))) score -= 0.3;
+  if (cw.length && uw.length && !cw.some((w) => uw.includes(w))) return 0;
   return score;
 }
 

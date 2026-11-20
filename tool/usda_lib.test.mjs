@@ -31,7 +31,8 @@ test('correspondances : même aliment, même état', () => {
   assert.equal(matchScore('Beef, minced steak, 5% fat, raw', 'Beef, flank, steak, separable lean only, trimmed to 0" fat, choice, raw'), 0);
   assert.ok(matchScore('Beef, minced steak, 5% fat, raw', 'Beef, ground, 95% lean meat / 5% fat, raw') > 0);
   assert.ok(matchScore('Lentil, boiled/cooked in water', 'Lentils, mature seeds, cooked, boiled, with salt') >= 0.7);
-  assert.ok(matchScore('Peanut, roasted, flavoured', 'Peanuts, all types, cooked, boiled, with salt') < 0.7);
+  assert.equal(matchScore('Peanut, roasted, flavoured', 'Peanuts, all types, cooked, boiled, with salt'), 0);
+  assert.equal(matchScore('French bean, cooked', 'Beans, french, mature seeds, cooked, boiled, with salt'), 0);
 });
 
 test('plats composés exclus', () => {
