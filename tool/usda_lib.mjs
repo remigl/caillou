@@ -74,6 +74,7 @@ export function analyzeName(name) {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .replace(/\(.*?\)/g, ' ')
+    .replace(/\b(without|no) skin\b|\bskinless\b/g, ' skinless ')
     .split(/[^a-z-]+/)
     .filter(Boolean);
   const tokens = [];
@@ -122,7 +123,7 @@ export function matchScore(ciqualEn, usdaDesc) {
   if (!cs.length && [...u.stateWords].some((w) => !genericWords.has(w))) return 0;
   for (const p of MUST_MATCH) if (c.words.has(p) !== u.words.has(p)) return 0;
   for (const [cw, uw] of CONFLICTS) {
-    if (cw.every((w) => c.words.has(w)) && u.words.has(uw) && !cw.every((w) => u.words.has(w))) return 0;
+    if (cw.every((w) => c.words.has(w)) && u.words.has(uw) && !c.words.has(uw)) return 0;
   }
   const C = new Set(c.tokens);
   const U = new Set(u.tokens);

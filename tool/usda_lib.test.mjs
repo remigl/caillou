@@ -33,6 +33,8 @@ test('correspondances : même aliment, même état', () => {
   assert.ok(matchScore('Lentil, boiled/cooked in water', 'Lentils, mature seeds, cooked, boiled, with salt') >= 0.7);
   assert.equal(matchScore('Peanut, roasted, flavoured', 'Peanuts, all types, cooked, boiled, with salt'), 0);
   assert.equal(matchScore('French bean, cooked', 'Beans, french, mature seeds, cooked, boiled, with salt'), 0);
+  assert.equal(matchScore('Chicken, fillet, without skin, raw', 'Chicken, broilers or fryers, breast, meat and skin, raw'), 0);
+  assert.ok(matchScore('Egg, white, raw', 'Egg, white, raw, fresh') > 0);
 });
 
 test('plats composés exclus', () => {
