@@ -54,7 +54,7 @@ async function main() {
 
   const ciqualJson = JSON.parse(await readFile(path.join(ROOT, 'assets', 'data', 'ciqual.json'), 'utf8'));
   const pIdx = ciqualJson.nutrients.indexOf('proteins');
-  const ciqual = ciqualJson.foods.map((f) => ({ c: f.c, n: f.n, e: f.e, protein: typeof f.v[pIdx] === 'number' ? f.v[pIdx] : 0 }));
+  const ciqual = ciqualJson.foods.map((f) => ({ c: f.c, n: f.n, e: f.e, g: f.g, protein: typeof f.v[pIdx] === 'number' ? f.v[pIdx] : 0 }));
 
   const { dataset, stats } = buildAmino({ foods, nutrients, defs, ciqual });
   console.log(`${stats.usdaWithAmino} aliments USDA avec acides aminés ; ${stats.matched} aliments Ciqual rapprochés.`);

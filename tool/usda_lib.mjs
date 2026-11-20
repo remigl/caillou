@@ -118,13 +118,20 @@ export function matchScore(ciqualEn, usdaDesc) {
   const covU = inter / U.size; // part du nom USDA expliquée
   // Règle souple (USDA plus générique, un seul qualificatif Ciqual en plus) seulement si l'état est précisé
   // des deux côtés : « Lentil, green, cooked » ~ « Lentils, cooked », mais pas « Couscous with fish » ~ « Couscous ».
-  const accepted = (cs.length > 0 && covU === 1 && covC >= 0.5) || (covC >= 0.75 && covU >= 0.6);
+  const accepted = (cs.length > 0 && c.head === u.head && covU === 1 && covC >= 0.5) || (covC >= 0.75 && covU >= 0.6);
   if (!accepted) return 0;
   let score = (covC + covU) / 2;
   if (c.head === u.head) score += 0.15;
   for (const w of c.stateWords) if (u.stateWords.has(w)) score += 0.2; // « hard-boiled » = « hard-boiled »
+  // Modes de cuisson précisés des deux côtés mais différents (grillé ≠ bouilli) : pénalité.
+  const generic = new Set(['raw', 'cooked']);
+  const cw = [...c.stateWords].filter((w) => !generic.has(w));
+  const uw = [...u.stateWords].filter((w) => !generic.has(w));
+  if (cw.length && uw.length && !cw.some((w) => uw.includes(w))) score -= 0.3;
   return score;
 }
+
+const DISH_GROUP = /plat|pizza|sandwich|soupe|dessert|glace|gateau|patisserie|viennoiserie|biscuit|confiserie|sauce|quiche|tarte|entremet|barre|petit-dejeuner|aperitif|feuillete|cremes et specialites|traiteur|salades composees|infantile|tartinable|chocolat/;
 
 /**
  * Construit le jeu de données. foods: [{ndb, desc}], nutrients: [{ndb, nutr, val}], defs: [{nutr, desc}],
@@ -167,6 +174,8 @@ export function buildAmino({ foods, nutrients, defs, ciqual, minScore = 0.7, min
   const samples = [];
   for (const c of ciqual) {
     if (!c.e || !(c.protein >= minProtein)) continue;
+    // Plats composés, desserts, pâtisseries : la recette fait trop varier la composition.
+    if (DISH_GROUP.test((c.g ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())) continue;
     const ct = analyzeName(c.e);
     let best = null;
     let bestScore = 0;

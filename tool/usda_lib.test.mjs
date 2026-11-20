@@ -24,6 +24,21 @@ test('correspondances : même aliment, même état', () => {
   assert.equal(matchScore('Kidney bean, canned, drained', 'Beans, kidney, red, mature seeds, raw'), 0);
   assert.equal(matchScore('Chicken tajine, prepacked', 'Chicken, skin (drumsticks and thighs), raw'), 0);
   assert.equal(matchScore('Couscous with fish', 'Couscous, cooked'), 0);
+  assert.equal(matchScore('Fresh pasta, with eggs, raw', 'Egg, whole, raw, fresh'), 0);
+  assert.ok(matchScore('Peanut, roasted, flavoured', 'Peanuts, all types, cooked, boiled, with salt') < 0.7);
+});
+
+test('plats composés exclus', () => {
+  const defs = AMINO_ACIDS.map(([name], i) => ({ nutr: String(501 + i), desc: name }));
+  const foods = [{ ndb: '1', desc: 'Beans, white, mature seeds, canned' }];
+  const nutrients = defs.map((d) => ({ ndb: '1', nutr: d.nutr, val: '0.5' }));
+  const ciqual = [
+    { c: 1, n: 'Cassoulet, appertisé', e: 'Beans, white, canned', g: 'plats composés', protein: 8 },
+    { c: 2, n: 'Haricot blanc, appertisé', e: 'White bean, canned', g: 'légumineuses', protein: 7 },
+  ];
+  const { dataset } = buildAmino({ foods, nutrients, defs, ciqual });
+  assert.equal(dataset.ciqual[1], undefined);
+  assert.equal(dataset.ciqual[2], 0);
 });
 
 test('construction du jeu de données', () => {
